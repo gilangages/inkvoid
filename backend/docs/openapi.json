@@ -1,0 +1,230 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Luma Store API",
+    "description": "Dokumentasi API untuk Luma Digital Asset Store. Fokus pada penjualan aset digital direct-buy.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Abdian Developer",
+      "email": "abdian@example.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api",
+      "description": "Local Development Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Products",
+      "description": "Operasi terkait data produk digital"
+    },
+    {
+      "name": "Payment",
+      "description": "Operasi transaksi dan integrasi Midtrans"
+    }
+  ],
+  "paths": {
+    "/products": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Ambil Semua Produk",
+        "description": "Mengambil daftar semua produk digital yang tersedia di database untuk ditampilkan di gallery frontend.",
+        "responses": {
+          "200": {
+            "description": "Berhasil mengambil data produk",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "List Data Produk"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Product"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server Error"
+          }
+        }
+      }
+    },
+    "/payment/purchase": {
+      "post": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "Buat Transaksi Baru (Snap Token)",
+        "description": "Membuat order ID unik dan meminta Token Snap dari Midtrans berdasarkan produk yang dipilih.",
+        "requestBody": {
+          "description": "Data pelanggan dan produk yang akan dibeli",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "product_id",
+                  "customer_name",
+                  "customer_email"
+                ],
+                "properties": {
+                  "product_id": {
+                    "type": "integer",
+                    "description": "ID Produk yang ada di database",
+                    "example": 1
+                  },
+                  "customer_name": {
+                    "type": "string",
+                    "description": "Nama lengkap pembeli",
+                    "example": "Abdian Ganteng"
+                  },
+                  "customer_email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Email valid untuk pengiriman link download",
+                    "example": "abdian@example.com"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token berhasil dibuat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Token Pembayaran Berhasil Dibuat"
+                    },
+                    "token": {
+                      "type": "string",
+                      "description": "Token Snap Midtrans (kunci popup)",
+                      "example": "c720-3810-jkd9-2910"
+                    },
+                    "order_id": {
+                      "type": "string",
+                      "description": "Order ID unik format LUMA-TIMESTAMP-ID",
+                      "example": "LUMA-1769079329333-1"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Produk tidak ditemukan di database"
+          },
+          "500": {
+            "description": "Gagal koneksi ke Midtrans"
+          }
+        }
+      }
+    },
+    "/payment/notification": {
+      "post": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "Midtrans Webhook (Jangan dipanggil Frontend)",
+        "description": "Endpoint khusus untuk menerima notifikasi status pembayaran dari server Midtrans secara otomatis.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "order_id": {
+                    "type": "string",
+                    "example": "LUMA-1769079329333-1"
+                  },
+                  "transaction_status": {
+                    "type": "string",
+                    "enum": [
+                      "capture",
+                      "settlement",
+                      "pending",
+                      "deny",
+                      "expire",
+                      "cancel"
+                    ],
+                    "example": "settlement"
+                  },
+                  "fraud_status": {
+                    "type": "string",
+                    "example": "accept"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK (Sinyal diterima)"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "Sticker Pack Vol. 1"
+          },
+          "price": {
+            "type": "number",
+            "example": 10000
+          },
+          "description": {
+            "type": "string",
+            "example": "Stiker lucu format PNG & PDF."
+          },
+          "image_url": {
+            "type": "string",
+            "example": "https://placehold.co/600x400"
+          },
+          "file_url": {
+            "type": "string",
+            "example": "https://drive.google.com/..."
+          }
+        }
+      }
+    }
+  }
+}

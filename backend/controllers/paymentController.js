@@ -50,7 +50,7 @@ const createTransaction = async (req, res) => {
       ],
       // --- BEST PRACTICE: HEMAT BIAYA ADMIN ---
       // Paksa user cuma bisa bayar pakai QRIS / GoPay / ShopeePay
-      enabled_payments: ["gopay", "shopeepay", "other_qris"],
+      // enabled_payments: ["gopay", "shopeepay", "other_qris"],
       callbacks: {
         finish: "http://localhost:5173", // Nanti ini URL Frontend kamu setelah bayar
       },
