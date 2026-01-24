@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Outlet, Link, useLocation } from "react-router";
+import { Outlet, Link, NavLink } from "react-router";
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -14,19 +14,18 @@ import {
 } from "lucide-react";
 
 export default function LayoutAdmin() {
-  // State Mobile (Overlay)
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  // State Desktop (Geser/Collapse) - Default true (Terbuka)
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
 
-  const location = useLocation();
-  const isActive = (path) => location.pathname === path;
+  // Kita buat satu variabel untuk style dasar agar tidak ngetik berulang kali
+  const baseStyle = "flex items-center gap-3 py-3 px-4 rounded-lg transition-all duration-200 mb-1";
 
-  const linkClass = (path) =>
-    `flex items-center gap-3 py-3 px-4 rounded-lg transition-all duration-200 mb-1 ${
-      isActive(path)
-        ? "bg-[#8da399] text-[#fdfcf8] font-bold shadow-md"
-        : "text-[#fdfcf8] hover:bg-[#5a4e44] hover:pl-6"
+  // Fungsi helper untuk class NavLink
+  const navLinkClass = ({ isActive }) =>
+    `${baseStyle} ${
+      isActive
+        ? "bg-[#8da399] text-[#fdfcf8] font-bold shadow-md" // Style saat Aktif
+        : "text-[#fdfcf8] hover:bg-[#5a4e44] hover:pl-6" // Style saat Tidak Aktif (Gunakan warna krem/putih)
     }`;
 
   return (
@@ -77,25 +76,25 @@ export default function LayoutAdmin() {
 
         {/* MENU */}
         <nav className="space-y-2">
-          <p className="text-xs text-gray-500 uppercase font-bold mb-2 mt-4 px-4">Menu Utama</p>
+          <p className="text-xs text-gray-500 uppercase font-bold mb-2 mt-4 px-4 tracking-widest">Menu Utama</p>
 
-          <Link to="/admin/dashboard" className={linkClass("/admin/dashboard")} onClick={() => setIsMobileOpen(false)}>
+          <NavLink to="/admin/dashboard" className={navLinkClass} onClick={() => setIsMobileOpen(false)}>
             <LayoutDashboard size={20} /> Dashboard
-          </Link>
+          </NavLink>
 
-          <Link to="/admin/products" className={linkClass("/admin/products")} onClick={() => setIsMobileOpen(false)}>
+          <NavLink to="/admin/products" className={navLinkClass} onClick={() => setIsMobileOpen(false)}>
             <ShoppingBag size={20} /> Daftar Produk
-          </Link>
+          </NavLink>
 
-          <Link to="/admin/upload" className={linkClass("/admin/upload")} onClick={() => setIsMobileOpen(false)}>
+          <NavLink to="/admin/upload" className={navLinkClass} onClick={() => setIsMobileOpen(false)}>
             <PlusCircle size={20} /> Upload Produk
-          </Link>
+          </NavLink>
 
-          <p className="text-xs text-gray-500 uppercase font-bold mb-2 mt-6 px-4">Transaksi</p>
-          <div className="py-3 px-4 text-gray-500 flex items-center gap-3 cursor-not-allowed opacity-60">
-            <FileText size={20} /> Riwayat Pesanan{" "}
-            <span className="text-[10px] bg-red-500/20 text-red-300 px-1 rounded ml-auto">Soon</span>
-          </div>
+          <p className="text-xs text-gray-500 uppercase font-bold mb-2 mt-6 px-4 tracking-widest">Transaksi</p>
+
+          <NavLink to="/admin/orders" className={navLinkClass} onClick={() => setIsMobileOpen(false)}>
+            <FileText size={20} /> Riwayat Pesanan
+          </NavLink>
 
           <div className="mt-12 border-t border-gray-700 pt-4">
             <Link

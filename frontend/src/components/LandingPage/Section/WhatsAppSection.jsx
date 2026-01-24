@@ -17,7 +17,7 @@ export const WhatsAppSection = () => {
         </p>
 
         <a
-          href="https://wa.me/6281234567890?text=Halo%20kak,%20mau%20tanya%20soal%20stiker..."
+          href="https://wa.me/6283824032460?text=Halo%20kak,%20mau%20tanya%20soal%20stiker..."
           target="_blank"
           rel="noreferrer"
           className="inline-flex items-center gap-3 bg-[#25D366] hover:bg-[#1ebd59] text-white px-8 py-3.5 rounded-xl font-bold shadow-[4px_4px_0px_0px_rgba(62,54,46,0.1)] hover:-translate-y-1 transition-all group relative z-10 border-2 border-transparent">

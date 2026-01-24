@@ -203,4 +203,24 @@ const sendEmail = async (data) => {
   }
 };
 
-module.exports = { createTransaction, handleNotification };
+const getAllTransactions = async (req, res) => {
+  try {
+    // Ambil data transaksi dan gabungkan dengan nama produk
+    const [rows] = await db.query(`
+      SELECT t.*, p.name as product_name
+      FROM transactions t
+      LEFT JOIN products p ON t.product_id = p.id
+      ORDER BY t.createdAt DESC
+    `);
+
+    res.status(200).json({
+      success: true,
+      data: rows,
+    });
+  } catch (error) {
+    console.error("Error fetching transactions:", error);
+    res.status(500).json({ message: "Gagal mengambil data riwayat." });
+  }
+};
+
+module.exports = { createTransaction, handleNotification, getAllTransactions };

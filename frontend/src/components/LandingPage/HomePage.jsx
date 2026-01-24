@@ -138,7 +138,7 @@ export const HomePage = () => {
 
       {/* Floating WA */}
       <a
-        href="https://wa.me/6281234567890"
+        href="https://wa.me/6283824032460?text=Halo%20kak,%20mau%20tanya%20soal%20stiker..."
         target="_blank"
         rel="noreferrer"
         className="fixed bottom-8 right-2 md:bottom-16 md:right-6 bg-[#25D366] text-white p-3 rounded-full shadow-lg z-50 hover:scale-110 transition-transform flex items-center justify-center border-4 border-white">

@@ -11,6 +11,7 @@ import ProductForm from "./components/Admin/Pages/ProductForm.jsx";
 import DashboardOverview from "./components/Admin/Pages/DashboardOverview.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import NotFound from "./components/NotFound.jsx";
+import OrderHistory from "./components/Admin/Pages/OrderHistory.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -30,6 +31,7 @@ createRoot(document.getElementById("root")).render(
             <Route path="products" element={<ProductList />} />
             <Route path="upload" element={<ProductForm />} />
             <Route path="logout" element={<AdminLogout />} />
+            <Route path="orders" element={<OrderHistory />} />
           </Route>
         </Route>
         <Route path="*" element={<NotFound />} />
