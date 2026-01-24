@@ -1,30 +1,85 @@
 @import "tailwindcss";
 
-/* Ghibli Font & Vibe */
-body {
-  font-family: "Nunito", sans-serif; /* Pastikan font ini dipakai */
-  background-color: #f0f7f4; /* Warna awan mint sangat muda */
-  background-image:
-    radial-gradient(at 0% 0%, hsla(158, 46%, 89%, 1) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, hsla(200, 75%, 90%, 1) 0px, transparent 50%);
-  color: #134e4a; /* Teal gelap untuk teks agar kontras tapi tidak hitam pekat */
+/* PALETTE: Warm Paper & Sage (Cocok untuk Sticker Shop) */
+:root {
+  --bg-paper: #fdfcf8; /* Krem Kertas */
+  --text-ink: #3e362e; /* Coklat Tua (Tinta) */
+  --primary-sage: #8da399; /* Hijau Sage Kalem */
+  --accent-clay: #d68c76; /* Merah Bata Pudar */
 }
 
-/* Animasi untuk Modal */
-@keyframes bounceIn {
-  0% {
-    transform: scale(0.9);
+body {
+  font-family: "Nunito", sans-serif;
+  background-color: var(--bg-paper);
+  color: var(--text-ink);
+  /* Pattern titik-titik halus (Dot Grid) ala buku jurnal */
+  background-image: radial-gradient(#e5e0d8 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f0eb;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cdc8c0;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8da399;
+}
+
+/* Animasi Modal */
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
     opacity: 0;
   }
-  60% {
-    transform: scale(1.05);
+  to {
+    transform: translateY(0);
     opacity: 1;
   }
+}
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+/* ANIMASI BARU: Floating Elements ala Goodnotes */
+@keyframes float {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(2deg);
+  }
   100% {
-    transform: scale(1);
+    transform: translateY(0px) rotate(0deg);
   }
 }
 
-.animate-bounce-in {
-  animation: bounceIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+@keyframes float-reverse {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(15px) rotate(-2deg);
+  }
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+}
+
+.animate-float-slow {
+  animation: float 6s ease-in-out infinite;
+}
+.animate-float-medium {
+  animation: float-reverse 5s ease-in-out infinite;
+}
+.animate-float-fast {
+  animation: float 4s ease-in-out infinite;
 }

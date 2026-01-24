@@ -84,19 +84,17 @@ const createTransaction = async (req, res) => {
     });
   }
 };
+// ... (Bagian createTransaction biarkan sama)
 
 const handleNotification = async (req, res) => {
   try {
-    // 1. Ambil data notifikasi (Langsung dari Body tanpa validasi ke Midtrans dulu)
     const statusResponse = req.body;
-
     const orderId = statusResponse.order_id;
     const transactionStatus = statusResponse.transaction_status;
     const fraudStatus = statusResponse.fraud_status;
 
     console.log(`Laporan masuk untuk Order: ${orderId} | Status: ${transactionStatus}`);
 
-    // 2. Tentukan Logic Status Pembayaran
     let orderStatus = "pending";
 
     if (transactionStatus == "capture") {
@@ -106,41 +104,43 @@ const handleNotification = async (req, res) => {
         orderStatus = "success";
       }
     } else if (transactionStatus == "settlement") {
-      orderStatus = "success"; // INI YANG KITA CARI (Uang masuk)
+      orderStatus = "success";
     } else if (transactionStatus == "cancel" || transactionStatus == "deny" || transactionStatus == "expire") {
       orderStatus = "failed";
     }
 
-    // 3. Update Status di Database
+    // Update Status
     await db.query("UPDATE transactions SET status = ? WHERE order_id = ?", [orderStatus, orderId]);
 
-    // 4. JIKA SUKSES -> KIRIM EMAIL OTOMATIS
     if (orderStatus === "success") {
-      // Ambil data customer & produk dari database untuk kirim email
+      // AMBIL DATA PRODUK & FILE URL
+      // Pastikan di tabel 'products' kolomnya bernama 'file_url' atau 'link_file' (sesuaikan dengan databasemu)
       const [rows] = await db.query(
-        `
-                SELECT t.customer_email, t.customer_name, p.name as product_name, p.file_url
-                FROM transactions t
-                JOIN products p ON t.product_id = p.id
-                WHERE t.order_id = ?`,
+        `SELECT t.customer_email, t.customer_name, p.name as product_name, p.image_url, p.price, p.description, p.file_url
+         FROM transactions t
+         JOIN products p ON t.product_id = p.id
+         WHERE t.order_id = ?`,
         [orderId],
       );
 
       if (rows.length > 0) {
         const data = rows[0];
-        await sendEmail(data.customer_email, data.customer_name, data.product_name, data.file_url);
+        // Debugging: Cek di terminal apakah file_url ada isinya
+        console.log("Mengirim email ke:", data.customer_email, "Link:", data.file_url);
+
+        await sendEmail(data);
       }
     }
 
-    res.status(200).send("OK"); // Wajib balas OK ke Midtrans biar dia gak ngirim ulang
+    res.status(200).send("OK");
   } catch (error) {
     console.error("Error Webhook:", error);
     res.status(500).send("Error");
   }
 };
 
-// --- FUNGSI PEMBANTU: KIRIM EMAIL ---
-const sendEmail = async (email, name, productName, fileLink) => {
+// --- FUNGSI KIRIM EMAIL CANTIK ---
+const sendEmail = async (data) => {
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -149,22 +149,55 @@ const sendEmail = async (email, name, productName, fileLink) => {
     },
   });
 
+  // Format Rupiah
+  const price = parseInt(data.price).toLocaleString("id-ID");
+
   const mailOptions = {
-    from: `"Luma Store" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: `[Download] Aset Digital: ${productName}`,
+    from: `"Luma Store Official" <${process.env.EMAIL_USER}>`,
+    to: data.customer_email,
+    subject: `✨ Aset Kamu Siap! - ${data.product_name}`,
     html: `
-            <h3>Hai, ${name}!</h3>
-            <p>Terima kasih sudah membeli <b>${productName}</b>.</p>
-            <p>Silakan download asetmu melalui link di bawah ini:</p>
-            <a href="${fileLink}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">DOWNLOAD SEKARANG</a>
-            <p><small>Link ini aman. Jika ada kendala, balas email ini.</small></p>
-        `,
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Nunito', sans-serif; background-color: #F0F7F4; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px rgba(19, 78, 74, 0.1); }
+          .header { background-color: #047857; padding: 30px; text-align: center; color: white; }
+          .content { padding: 40px 30px; text-align: center; color: #134e4a; }
+          .btn { background-color: #059669; color: #ffffff !important; padding: 15px 30px; border-radius: 50px; text-decoration: none; font-weight: bold; display: inline-block; margin-top: 20px; box-shadow: 0 4px 6px rgba(5, 150, 105, 0.3); }
+          .footer { background-color: #ecfdf5; padding: 20px; text-align: center; font-size: 12px; color: #6ee7b7; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin:0;">Luma Store</h1>
+          </div>
+          <div class="content">
+            <h2 style="color: #065f46;">Hai, ${data.customer_name}! 👋</h2>
+            <p>Terima kasih banyak sudah mendukung kreator lokal.</p>
+            <p>Pesananmu <strong>${data.product_name}</strong> seharga <strong>Rp ${price}</strong> sudah berhasil dikonfirmasi.</p>
+
+            <div style="margin: 30px 0;">
+              <p>Silakan download asetmu melalui tombol di bawah ini:</p>
+              <a href="${data.file_url}" class="btn">☁️ DOWNLOAD ASET</a>
+            </div>
+
+            <p style="font-size: 14px; color: #9ca3af;">Link ini berlaku selamanya. Simpan email ini baik-baik ya!</p>
+          </div>
+          <div class="footer">
+            &copy; 2024 Luma Store. Dibuat dengan cinta.
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
   };
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`✅ Email berhasil dikirim ke ${email}`);
+    console.log(`✅ Email berhasil dikirim ke ${data.customer_email}`);
   } catch (err) {
     console.error("❌ Gagal kirim email:", err);
   }

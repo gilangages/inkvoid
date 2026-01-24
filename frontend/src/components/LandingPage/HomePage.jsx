@@ -1,45 +1,78 @@
 import { useEffect, useState } from "react";
-import { Navbar } from "./Section/Navbar";
-import { ProductCard } from "./Section/ProductCard";
-import CheckoutModal from "../CheckoutModal";
-import { getProducts } from "./../../lib/api/ProductApi";
+import { getProducts } from "../../lib/api/ProductApi";
 import { purchaseProduct } from "../../lib/api/PaymentApi";
 
-export function HomePage() {
+// Import Components
+import { Navbar } from "./Section/Navbar";
+import { Hero } from "./Section/Hero";
+import { Benefits } from "./Section/Benefits";
+import { ProductShowcase } from "./Section/ProductShowcase";
+import { FAQ } from "./Section/FAQ";
+import { Footer } from "./Section/Footer";
+import { CheckoutModal } from "../CheckoutModal";
+import { WhatsAppSection } from "./Section/WhatsAppSection";
+import { SuccessModal } from "../SuccessModal";
+import { ErrorModal } from "../ErrorModal";
+
+export const HomePage = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // State untuk Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [isErrorOpen, setIsErrorOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // --- 1. PINDAHKAN FUNGSI HELPER KE ATAS (Best Practice) ---
+  // Agar aman dipanggil di dalam useEffect
+  const showError = (msg) => {
+    setErrorMessage(msg);
+    setIsErrorOpen(true);
+  };
+
+  const handleOpenModal = (product) => {
+    setSelectedProduct(product);
+    setIsModalOpen(true);
+  };
+
   useEffect(() => {
-    // Load Snap & Fetch Data (Gabungan code sebelumnya)
-    const clientKey = "SB-Mid-client-XXXXXXXXXXXXXXXX"; // Ganti Client Key mu!
+    // --- 2. PERBAIKAN ERROR "Cascading Renders" ---
+    // Cek Titipan Pesan dengan setTimeout agar tidak synchronous
+    const paymentStatus = localStorage.getItem("paymentSuccess");
+    if (paymentStatus === "true") {
+      setTimeout(() => {
+        setIsSuccessOpen(true); // Buka modal dengan sedikit delay
+      }, 500);
+      localStorage.removeItem("paymentSuccess");
+    }
+
+    // 3. Setup Snap Midtrans
+    const clientKey = "Mid-client-9k6P5r8pEQkQaEan"; // GANTI KEY KAMU
     const script = document.createElement("script");
     script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
     script.setAttribute("data-client-key", clientKey);
     script.async = true;
     document.body.appendChild(script);
 
+    // 4. Fetch Data
     getProducts()
       .then((res) => res.json())
       .then((json) => setProducts(json.data || []))
-      .catch((err) => console.error(err))
+      .catch((err) => {
+        console.error(err);
+        showError("Gagal memuat produk."); // Sekarang aman dipanggil
+      })
       .finally(() => setLoading(false));
 
-    return () => document.body.removeChild(script);
-  }, []);
+    return () => {
+      if (document.body.contains(script)) document.body.removeChild(script);
+    };
+  }, []); // Dependency array kosong aman karena showError didefinisikan di dalam komponen
 
-  // 1. Trigger saat tombol "Beli" di Card diklik
-  const handleOpenModal = (product) => {
-    setSelectedProduct(product);
-    setIsModalOpen(true);
-  };
-
-  // 2. Trigger saat Form Modal disubmit
   const handleProcessPayment = async (product, customerName, customerEmail) => {
-    setIsModalOpen(false); // Tutup modal dulu biar rapi
+    setIsModalOpen(false);
 
     try {
       const res = await purchaseProduct({
@@ -51,69 +84,68 @@ export function HomePage() {
 
       if (data.token && window.snap) {
         window.snap.pay(data.token, {
-          onSuccess: () => alert("✅ Pembayaran Berhasil! Cek emailmu."),
-          onPending: () => alert("⏳ Menunggu pembayaran..."),
-          onError: () => alert("❌ Pembayaran gagal."),
+          onSuccess: (result) => {
+            console.log("Success:", result);
+            // Simpan tanda sukses
+            localStorage.setItem("paymentSuccess", "true");
+            // Reload halaman (opsional, tapi bagus untuk memastikan cart/state bersih)
+            // Atau kalau mau manual tanpa reload:
+            // setIsSuccessOpen(true);
+            window.location.reload();
+          },
+          onPending: (result) => {
+            console.log("Pending Result:", result);
+            showError("Pembayaran tertunda. Cek riwayat transaksimu.");
+          },
+          onError: (result) => {
+            console.error("Error Result:", result);
+            showError("Pembayaran gagal. Silakan coba lagi.");
+          },
+          onClose: () => {
+            console.log("Popup closed");
+          },
         });
+      } else {
+        showError("Gagal mendapatkan token: " + (data.message || "Unknown Error"));
       }
     } catch (error) {
-      alert("Error: " + error.message);
+      showError("Error Sistem: " + error.message);
     }
   };
 
   return (
-    <div className="min-h-screen pb-20 overflow-x-hidden">
+    <div className="min-h-screen flex flex-col font-sans text-[#3E362E]">
       <Navbar />
+      <div className="flex-grow">
+        <Hero />
+        <Benefits />
+        <ProductShowcase products={products} loading={loading} onBuy={handleOpenModal} />
+        <FAQ />
+        <WhatsAppSection />
+      </div>
+      <Footer />
 
-      {/* HERO SECTION (Ghibli Vibes) */}
-      <section className="pt-40 pb-20 px-6 text-center max-w-5xl mx-auto relative">
-        {/* Hiasan background bulat (awan abstrak) */}
-        <div className="absolute top-20 left-10 w-32 h-32 bg-teal-200/30 rounded-full blur-3xl -z-10"></div>
-        <div className="absolute top-40 right-20 w-40 h-40 bg-emerald-200/30 rounded-full blur-3xl -z-10"></div>
-
-        <h1 className="text-5xl md:text-6xl font-extrabold text-teal-900 mb-6 tracking-tight leading-tight">
-          Karya Digital <br />
-          <span className="text-emerald-600">Penuh Inspirasi.</span>
-        </h1>
-        <p className="text-xl text-teal-700/70 mb-10 max-w-2xl mx-auto font-medium">
-          Temukan aset terbaik untuk projek kreatifmu. Dibuat dengan hati, dikirim instan ke emailmu.
-        </p>
-
-        <a
-          href="#products"
-          className="bg-teal-800 text-white px-8 py-4 rounded-full font-bold shadow-xl shadow-teal-900/20 hover:bg-teal-900 hover:-translate-y-1 transition-all">
-          Jelajahi Sekarang 🌿
-        </a>
-      </section>
-
-      {/* PRODUCTS GRID */}
-      <main id="products" className="max-w-6xl mx-auto px-6">
-        <div className="flex items-center justify-between mb-10 border-b border-teal-100 pb-4">
-          <h2 className="text-3xl font-bold text-teal-900">Koleksi Terbaru</h2>
-        </div>
-
-        {loading ? (
-          <div className="text-center py-20 text-teal-500 font-medium animate-pulse">Sedang memuat keajaiban...</div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onBuy={handleOpenModal} // Sambungkan ke fungsi buka modal
-              />
-            ))}
-          </div>
-        )}
-      </main>
-
-      {/* MODAL COMPONENT */}
       <CheckoutModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         product={selectedProduct}
         onSubmit={handleProcessPayment}
       />
+
+      {/* MODAL KOMPONEN */}
+      <SuccessModal isOpen={isSuccessOpen} onClose={() => setIsSuccessOpen(false)} />
+      <ErrorModal isOpen={isErrorOpen} onClose={() => setIsErrorOpen(false)} message={errorMessage} />
+
+      {/* Floating WA */}
+      <a
+        href="https://wa.me/6281234567890"
+        target="_blank"
+        rel="noreferrer"
+        className="fixed bottom-16 right-6 bg-[#25D366] text-white p-3 rounded-full shadow-lg z-50 hover:scale-110 transition-transform flex items-center justify-center border-4 border-white">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.008-.57-.008-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+        </svg>
+      </a>
     </div>
   );
-}
+};
