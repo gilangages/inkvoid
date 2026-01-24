@@ -13,9 +13,12 @@ createRoot(document.getElementById("root")).render(
       <Routes>
         <Route path="/" element={<HomePage />} />
 
+        <Route path="admin/login" element={<AdminLogin />} />
+
         <Route path="/admin" element={<LayoutAdmin />}>
-          <Route path="login" />
-          <Route path="dashboard" />
+          {/* Index route otomatis ke dashboard */}
+          <Route index element={<AdminDashboard />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
         </Route>
       </Routes>
     </BrowserRouter>
