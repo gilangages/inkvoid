@@ -83,6 +83,8 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
               className="relative w-full h-full aspect-[4/5] md:aspect-auto md:h-full overflow-hidden bg-white group cursor-zoom-in"
               onClick={() => setIsZoomOpen(true)}>
               <img
+                onContextMenu={(e) => e.preventDefault()} // Mencegah klik kanan
+                onDragStart={(e) => e.preventDefault()} // Mencegah gambar di-drag ke desktop
                 src={images[currentImgIdx]}
                 alt={product.name}
                 className="w-full h-full object-cover transition-transform duration-700 md:group-hover:scale-110"
@@ -238,6 +240,8 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
 
           <div className="relative w-full h-full flex items-center justify-center p-0 md:p-20">
             <img
+              onContextMenu={(e) => e.preventDefault()} // Mencegah klik kanan
+              onDragStart={(e) => e.preventDefault()} // Mencegah gambar di-drag ke desktop
               src={images[currentImgIdx]}
               className="max-w-full max-h-full object-contain animate-popIn shadow-2xl"
               onClick={(e) => e.stopPropagation()}

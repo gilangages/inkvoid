@@ -8,6 +8,8 @@ export const ProductCard = ({ product, onBuy }) => {
       {/* Gambar ala Polaroid */}
       <div className="aspect-square bg-[#F3F0E9] rounded-lg overflow-hidden mb-3 relative border border-[#E5E0D8]">
         <img
+          onContextMenu={(e) => e.preventDefault()} // Mencegah klik kanan
+          onDragStart={(e) => e.preventDefault()} // Mencegah gambar di-drag ke desktop
           src={product.image_url}
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"

@@ -8,6 +8,8 @@ export const Footer = () => {
         <div className="flex flex-col items-center md:items-start gap-3">
           {/* LOGO BESAR DISINI (Ukuran h-24 atau h-32 biar Puas!) */}
           <img
+            onContextMenu={(e) => e.preventDefault()} // Mencegah klik kanan
+            onDragStart={(e) => e.preventDefault()} // Mencegah gambar di-drag ke desktop
             src={logoLuma}
             alt="LumaSticker Giant Logo"
             className="h-32 w-auto object-contain  hover:scale-110 transition-all duration-500"

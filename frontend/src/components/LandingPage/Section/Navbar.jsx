@@ -27,7 +27,13 @@ export const Navbar = () => {
         <div
           className="flex items-center  cursor-pointer group"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-          <img src="./luma-sticker.png" alt="" className="h-12  w-auto" />
+          <img
+            onContextMenu={(e) => e.preventDefault()} // Mencegah klik kanan
+            onDragStart={(e) => e.preventDefault()}
+            src="./luma-sticker.png"
+            alt=""
+            className="h-12  w-auto"
+          />
           <span className="font-black text-2xl text-[#3E362E] tracking-tight ">
             Luma<span className="text-[#8DA399]">Sticker</span>.
           </span>
