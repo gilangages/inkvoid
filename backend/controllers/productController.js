@@ -3,58 +3,65 @@ const { cloudinary } = require("../middleware/uploadMiddleware");
 const fs = require("fs");
 const path = require("path");
 
-// Helper Parse JSON
+// === HELPER UTAMA: Parse JSON Robust (Anti Double-Stringify) ===
+// Ini memperbaiki masalah di mana JSON tersimpan sebagai string ganda di DB
 const safeParseJSON = (jsonString, fallback = []) => {
+  if (!jsonString) return fallback;
   try {
-    return JSON.parse(jsonString);
+    let parsed = JSON.parse(jsonString);
+
+    // TRICKY FIX: Cek apakah hasil parse masih berupa string?
+    // Jika ya, berarti kena double-stringify. Kita parse sekali lagi.
+    if (typeof parsed === "string") {
+      try {
+        const doubleParsed = JSON.parse(parsed);
+        if (typeof doubleParsed === "object") return doubleParsed;
+      } catch (e) {
+        // Jika gagal parse kedua kali, kembalikan yang pertama
+        return parsed;
+      }
+    }
+    return parsed;
   } catch (e) {
+    console.error("JSON Parse Error:", e.message);
     return fallback;
   }
 };
 
-// === HELPER: Dynamic Base URL Generator (Lebih Robust) ===
+// === HELPER: Dynamic Base URL Generator ===
 const getBaseUrl = (req) => {
-  // 1. Prioritaskan Environment Variable (Penting untuk Production/Deployment)
-  if (process.env.API_BASE_URL) {
-    return process.env.API_BASE_URL;
-  }
-  // 2. Fallback ke Request Host (Untuk Localhost)
+  if (process.env.API_BASE_URL) return process.env.API_BASE_URL;
   const protocol = req.protocol;
   const host = req.get("host");
   return `${protocol}://${host}`;
 };
 
-// === HELPER UTAMA: Ekstrak Public ID Cloudinary (BEST PRACTICE & ROBUST) ===
+// === HELPER: Ekstrak Public ID Cloudinary (REVISED & ROBUST) ===
 const getCloudinaryPublicId = (url) => {
   if (!url || !url.includes("cloudinary.com")) return null;
   try {
-    // 1. Hapus Query Parameters
+    // 1. Bersihkan Query Params & Extension
     const urlWithoutQuery = url.split("?")[0];
-
-    // 2. Hapus Extension (.jpg, .png, dll) dari akhir URL
-    // Regex ini menghapus titik terakhir dan karakter setelahnya
     const urlWithoutExt = urlWithoutQuery.replace(/\.[^/.]+$/, "");
 
-    // 3. Regex Magic: Cari pola "/v<angka>/<public_id>"
-    // Cloudinary standard: .../upload/w_500,c_fill/v123456789/folder/namaproduk
-    // Kita ingin mengambil "folder/namaproduk"
-    const regex = /\/v\d+\/(.+)$/;
-    const match = urlWithoutExt.match(regex);
+    // 2. CARA 1: Standard Regex (Cari /v<angka>/)
+    // Cloudinary standard: .../upload/v123456789/folder/namaproduk
+    const versionRegex = /\/v\d+\/(.+)$/;
+    const match = urlWithoutExt.match(versionRegex);
+    if (match && match[1]) return match[1];
 
-    if (match && match[1]) {
-      // match[1] adalah grup tangkapan setelah /v<angka>/
-      return match[1];
-    }
+    // 3. CARA 2: Fallback (Jika tidak ada version atau format beda)
+    // Ambil semua segmen setelah "/upload/"
+    const parts = urlWithoutExt.split("/upload/");
+    if (parts.length >= 2) {
+      let pathAfterUpload = parts[1];
 
-    // 4. Fallback: Jika tidak ada version (jarang terjadi di modern Cloudinary, tapi possible)
-    // Ambil string setelah "/upload/" dan abaikan segmen transformasi jika ada
-    const splitPath = urlWithoutExt.split("/upload/");
-    if (splitPath.length >= 2) {
-      const pathAfterUpload = splitPath[1];
-      // Jika path mengandung '/' (misal: w_500/folder/img), kita ambil bagian paling belakang sebagai ID??
-      // Sebenarnya fallback ini berisiko. Lebih aman asumsikan URL selalu punya version jika pakai library official.
-      // Namun, untuk safety, kita kembalikan path setelah upload, lalu hapus folder transform jika terdeteksi.
-      return pathAfterUpload;
+      // Hapus transformasi jika ada (segmen yang diawali w_, h_, c_, dpr_, dll)
+      // Contoh: w_500,c_fill/folder/img -> folder/img
+      const segments = pathAfterUpload.split("/");
+      const cleanSegments = segments.filter((seg) => !seg.match(/^(w_|h_|c_|dpr_|q_|f_|e_|co_|b_|fl_)/));
+
+      return cleanSegments.join("/");
     }
 
     return null;
@@ -64,7 +71,7 @@ const getCloudinaryPublicId = (url) => {
   }
 };
 
-// === HELPER: Hapus File (Updated untuk Robustness) ===
+// === HELPER: Hapus File ===
 const deleteFile = async (fileUrl) => {
   if (!fileUrl) return;
 
@@ -73,11 +80,10 @@ const deleteFile = async (fileUrl) => {
     if (fileUrl.includes("cloudinary.com")) {
       const publicId = getCloudinaryPublicId(fileUrl);
       if (publicId) {
-        // await di sini penting agar kita yakin Cloudinary menerima request hapus
         await cloudinary.uploader.destroy(publicId);
-        console.log(`[Cloudinary] Deleted: ${publicId}`);
+        // console.log(`[Cloudinary] Deleted: ${publicId}`);
       } else {
-        console.warn(`[Cloudinary] Skip delete, public ID not found for: ${fileUrl}`);
+        console.warn(`[Cloudinary] Gagal ekstrak ID, skip: ${fileUrl}`);
       }
     }
     // B. Jika file Local
@@ -88,24 +94,18 @@ const deleteFile = async (fileUrl) => {
       } else {
         filename = path.basename(fileUrl);
       }
-
-      // Sanitasi path untuk mencegah traversal directory (Security Best Practice)
       const safeFilename = path.basename(filename);
       const filePath = path.join(__dirname, "../public/uploads", safeFilename);
-
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
-        console.log(`[Local] Deleted: ${filePath}`);
       }
     }
   } catch (error) {
-    // Kita gunakan console.error tapi TIDAK melempar error ulang (throw)
-    // Agar jika 1 gambar gagal dihapus, proses hapus data produk di DB tetap jalan.
-    console.error(`Gagal menghapus file fisik (${fileUrl}):`, error.message);
+    console.error(`Error delete file (${fileUrl}):`, error.message);
   }
 };
 
-// 1. Get All Products (BEST PRACTICE: Merakit URL Disini)
+// 1. Get All Products
 const getAllProducts = async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM products WHERE is_deleted = 0 ORDER BY id DESC");
@@ -113,7 +113,7 @@ const getAllProducts = async (req, res) => {
 
     const products = rows.map((product) => {
       let images = [];
-      // Parsing data images
+      // Gunakan safeParseJSON yang baru
       if (typeof product.images === "string") {
         images = safeParseJSON(product.images, []);
       } else if (Array.isArray(product.images)) {
@@ -122,56 +122,35 @@ const getAllProducts = async (req, res) => {
         images = [product.image_url];
       }
 
-      // === LOGIC UTAMA: NORMALISASI URL ===
+      if (!Array.isArray(images)) images = [];
+
       const normalizedImages = images.map((img) => {
         let rawUrl = typeof img === "string" ? img : img.url;
         let finalUrl = rawUrl;
 
-        // Pastikan rawUrl valid string
         if (typeof rawUrl === "string") {
-          // Cek apakah ini Full URL (Cloudinary / External)
           if (rawUrl.startsWith("http")) {
             finalUrl = rawUrl;
-          }
-          // Cek apakah ini File Lokal
-          else {
-            // Bersihkan slash ganda atau slash depan agar konsisten
-            // Contoh: "/uploads/foto.jpg" atau "uploads/foto.jpg" atau "foto.jpg"
-
+          } else {
             let cleanPath = rawUrl;
-
-            // Jika path tidak diawali 'uploads', kita asumsikan itu nama file saja dan tambahkan '/uploads/'
             if (!cleanPath.includes("uploads")) {
               cleanPath = `/uploads/${cleanPath.replace(/^\/+/, "")}`;
             }
-
-            // Pastikan diawali slash "/" untuk digabung dengan domain
             if (!cleanPath.startsWith("/")) {
               cleanPath = `/${cleanPath}`;
             }
-
-            // Gabungkan
             finalUrl = `${baseUrl}${cleanPath}`;
           }
         }
 
-        // Return object standar
-        if (typeof img === "string") {
-          return { url: finalUrl, label: "Product Image" };
-        }
-        return {
-          ...img,
-          url: finalUrl, // URL yang sudah fix full domain
-        };
+        return typeof img === "string" ? { url: finalUrl, label: "Product Image" } : { ...img, url: finalUrl };
       });
 
-      // Filter gambar yang URL-nya null/undefined
       const validImages = normalizedImages.filter((img) => img.url);
 
       return {
         ...product,
         images: validImages,
-        // Pastikan image_url legacy juga selalu terisi dengan data valid pertama
         image_url: validImages.length > 0 ? validImages[0].url : "https://placehold.co/600x400?text=No+Image",
       };
     });
@@ -183,15 +162,12 @@ const getAllProducts = async (req, res) => {
   }
 };
 
-// 2. Create Product (BEST PRACTICE: Simpan Path Relatif)
+// 2. Create Product
 const createProduct = async (req, res) => {
   try {
     const { name, price, description, file_url, image_labels } = req.body;
 
     if (!name || !price || !description) {
-      if (req.files) {
-        /* logic cleanup temp file */
-      }
       return res.status(400).json({ success: false, message: "Data wajib diisi!" });
     }
     if (!req.files || req.files.length === 0) {
@@ -203,12 +179,9 @@ const createProduct = async (req, res) => {
 
     const imageObjects = req.files.map((file, index) => {
       let dbPath;
-
       if (isProduction) {
-        dbPath = file.path; // Cloudinary (tetap full URL https)
+        dbPath = file.path;
       } else {
-        // LOCAL: Simpan path relatif saja!
-        // Jangan simpan http://localhost...
         dbPath = `/uploads/${file.filename}`;
       }
 
@@ -220,6 +193,7 @@ const createProduct = async (req, res) => {
     });
 
     const mainImage = imageObjects[0].url;
+    // Stringify manual untuk memastikan format
     const imagesJson = JSON.stringify(imageObjects);
 
     const [result] = await db.query(
@@ -227,8 +201,6 @@ const createProduct = async (req, res) => {
       [name, price, description, mainImage, imagesJson, file_url || null],
     );
 
-    // Saat response ke Frontend, kita harus tetap kasih Full URL agar bisa langsung tampil
-    // Tapi di database yang tersimpan adalah path pendek.
     const baseUrl = getBaseUrl(req);
     const responseImages = imageObjects.map((img) => ({
       ...img,
@@ -252,11 +224,10 @@ const createProduct = async (req, res) => {
   }
 };
 
-// === 3. DELETE PRODUCT (Revised & Robust) ===
+// === 3. DELETE PRODUCT (FIXED & ROBUST) ===
 const deleteProduct = async (req, res) => {
   const { id } = req.params;
   try {
-    // 1. Ambil data gambar
     const [existing] = await db.query("SELECT images, image_url FROM products WHERE id = ?", [id]);
 
     if (existing.length === 0) {
@@ -264,49 +235,41 @@ const deleteProduct = async (req, res) => {
     }
 
     const product = existing[0];
-
-    // Gunakan SET untuk otomatis membuang URL duplikat
-    // (Misal: image_url sama dengan salah satu item di images array)
     const uniqueUrls = new Set();
 
-    // 2. Kumpulkan URL dari JSON Array 'images'
+    // 1. Ambil dari Array 'images' dengan parsing robust
     if (product.images) {
       const parsed = safeParseJSON(product.images);
-      parsed.forEach((img) => {
-        const url = typeof img === "object" ? img.url : img;
-        if (url) uniqueUrls.add(url);
-      });
+      if (Array.isArray(parsed)) {
+        parsed.forEach((img) => {
+          const url = typeof img === "object" ? img.url : img;
+          if (url) uniqueUrls.add(url);
+        });
+      }
     }
 
-    // 3. Tambahkan Main Image (legacy)
+    // 2. Ambil dari Main Image Legacy
     if (product.image_url) {
       uniqueUrls.add(product.image_url);
     }
 
-    // Konversi Set kembali ke Array
     const imagesToDelete = Array.from(uniqueUrls);
+    console.log(`[Cleanup] Menghapus ${imagesToDelete.length} gambar unik untuk Produk ID ${id}`);
 
-    // 4. Hapus dari Database dulu
+    // Hapus dari Database dulu
     await db.query("DELETE FROM products WHERE id = ?", [id]);
 
-    // 5. Hapus File di Cloudinary/Local
+    // Hapus File (Promise.allSettled agar parallel & tidak stop jika 1 error)
     if (imagesToDelete.length > 0) {
-      console.log(`[Cleanup] Menghapus ${imagesToDelete.length} file unik...`);
-
-      // Menggunakan Promise.allSettled agar jika 1 gagal, yang lain tetap terhapus
-      const results = await Promise.allSettled(imagesToDelete.map((url) => deleteFile(url)));
-
-      // (Opsional) Log hasil hapus
-      const successCount = results.filter((r) => r.status === "fulfilled").length;
-      console.log(`[Cleanup] Sukses hapus: ${successCount}/${imagesToDelete.length}`);
+      await Promise.allSettled(imagesToDelete.map((url) => deleteFile(url)));
     }
 
-    res.status(200).json({ success: true, message: "Produk dan semua gambar berhasil dihapus tuntas!" });
+    res.status(200).json({ success: true, message: "Produk dan semua gambar berhasil dihapus!" });
   } catch (error) {
     console.error("Error deleteProduct:", error);
     if (error.code === "ER_ROW_IS_REFERENCED_2") {
       await db.query("UPDATE products SET is_deleted = 1 WHERE id = ?", [id]);
-      return res.status(200).json({ success: true, message: "Produk diarsipkan (ada riwayat order)." });
+      return res.status(200).json({ success: true, message: "Produk diarsipkan (ada order terkait)." });
     }
     res.status(500).json({ success: false, message: "Gagal hapus produk" });
   }
@@ -324,26 +287,27 @@ const updateProduct = async (req, res) => {
     const oldProduct = existing[0];
     let oldImagesList =
       typeof oldProduct.images === "string" ? safeParseJSON(oldProduct.images) : oldProduct.images || [];
-    let oldUrls = oldImagesList.map((img) => (img.url ? img.url : img));
+    if (!Array.isArray(oldImagesList)) oldImagesList = [];
 
+    let oldUrls = oldImagesList.map((img) => (img.url ? img.url : img));
     let finalImages = [];
 
     if (images_metadata) {
-      const metadata = safeParseJSON(images_metadata);
+      const metadata = safeParseJSON(images_metadata, []);
       const isProduction = process.env.NODE_ENV === "production";
       let newFileIndex = 0;
 
       finalImages = metadata
         .map((item) => {
           if (item.type === "existing") {
-            // Keep existing path as is
-            return { url: item.url.replace(getBaseUrl(req), ""), label: item.label, order: item.order };
-            // Note: .replace() diatas jaga-jaga kalau frontend kirim full URL, kita potong lagi jadi relative
+            // Bersihkan base URL untuk disimpan relatif/bersih
+            let cleanUrl = item.url.replace(getBaseUrl(req), "");
+            return { url: cleanUrl, label: item.label, order: item.order };
           } else if (item.type === "new") {
             if (req.files && req.files[newFileIndex]) {
               const file = req.files[newFileIndex];
               newFileIndex++;
-              let url = isProduction ? file.path : `/uploads/${file.filename}`; // Simpan Relative
+              let url = isProduction ? file.path : `/uploads/${file.filename}`;
               return {
                 url: url,
                 label: item.label || file.originalname.split(".")[0],
@@ -355,12 +319,14 @@ const updateProduct = async (req, res) => {
         })
         .filter(Boolean);
 
-      // Cleanup images logic (Simplified for brevity)
+      // Logic Hapus Gambar Lama yang tidak terpakai lagi
       const newUrls = finalImages.map((img) => img.url);
       const urlsToDelete = oldUrls.filter((oldUrl) => !newUrls.includes(oldUrl));
-      urlsToDelete.forEach((url) => deleteFile(url));
+      if (urlsToDelete.length > 0) {
+        Promise.allSettled(urlsToDelete.map((url) => deleteFile(url)));
+      }
     } else {
-      finalImages = oldImagesList; // Fallback
+      finalImages = oldImagesList;
     }
 
     const finalMainImage = finalImages.length > 0 ? finalImages[0].url : null;
@@ -375,7 +341,6 @@ const updateProduct = async (req, res) => {
       id,
     ]);
 
-    // Construct Full URL for response
     const baseUrl = getBaseUrl(req);
     const responseImages = finalImages.map((img) => ({
       ...img,
@@ -389,7 +354,7 @@ const updateProduct = async (req, res) => {
   }
 };
 
-// === 5. BULK DELETE (Revised) ===
+// 5. Bulk Delete
 const bulkDeleteProducts = async (req, res) => {
   const { ids } = req.body;
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
@@ -400,8 +365,6 @@ const bulkDeleteProducts = async (req, res) => {
   let archivedCount = 0;
 
   try {
-    // Kita proses satu per satu ID agar lebih aman (sequential loop)
-    // Atau bisa parallel, tapi sequential lebih mudah ditrace errornya
     for (const id of ids) {
       try {
         const [rows] = await db.query("SELECT images, image_url FROM products WHERE id = ?", [id]);
@@ -410,21 +373,23 @@ const bulkDeleteProducts = async (req, res) => {
 
         if (rows.length > 0) {
           const product = rows[0];
-          let imagesToDelete = [];
+          const uniqueUrls = new Set();
 
-          // Collect images logic
           if (product.images) {
-            safeParseJSON(product.images).forEach((img) => {
-              const url = typeof img === "object" ? img.url : img;
-              if (url) imagesToDelete.push(url);
-            });
+            // Gunakan safeParseJSON yang baru!
+            const parsed = safeParseJSON(product.images);
+            if (Array.isArray(parsed)) {
+              parsed.forEach((img) => {
+                const url = typeof img === "object" ? img.url : img;
+                if (url) uniqueUrls.add(url);
+              });
+            }
           }
-          if (product.image_url && !imagesToDelete.includes(product.image_url)) {
-            imagesToDelete.push(product.image_url);
+          if (product.image_url) {
+            uniqueUrls.add(product.image_url);
           }
 
-          // === FIX: Gunakan await Promise.allSettled juga di sini ===
-          // Jangan pakai forEach biasa untuk async!
+          const imagesToDelete = Array.from(uniqueUrls);
           if (imagesToDelete.length > 0) {
             await Promise.allSettled(imagesToDelete.map((url) => deleteFile(url)));
           }
