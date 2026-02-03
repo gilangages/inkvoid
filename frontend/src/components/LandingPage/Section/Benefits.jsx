@@ -4,24 +4,28 @@ export const Benefits = () => {
   const benefits = [
     {
       title: "Desain Orisinil & Unik",
-      description: "Setiap goresan dibuat manual (hand-drawn), memberikan sentuhan personal yang tidak pasaran.",
+      description:
+        "Setiap goresan dibuat manual (hand-drawn), memberikan sentuhan personal yang hangat dan tidak pasaran.",
       icon: <Star className="text-[#FDFCF8]" size={24} />,
     },
     {
       title: "Kualitas HD & Tajam",
       description:
-        "File asli beresolusi tinggi (300 DPI). Gambar tetap jernih dan tidak pecah meski kamu zoom maksimal.",
-      icon: <Image className="text-[#FDFCF8]" size={24} />, // Ikon diganti jadi Image biar relevan
+        "File asli beresolusi tinggi (300 DPI). Hasil cetak dijamin detail, jernih, dan tidak pecah meski diperbesar.",
+      icon: <Image className="text-[#FDFCF8]" size={24} />,
     },
     {
       title: "Format Fleksibel",
+      // UPDATE: Menambahkan kata "Cetak" agar pembeli sadar ini bisa diprint
       description:
-        "Bukan hanya untuk GoodNotes! Kamu dapat file PNG transparan yang bisa dipakai di mana saja (Notion, Instagram, dll).",
+        "Dual fungsi! Bisa dipakai digital (GoodNotes/Notion) atau dicetak fisik (Printable) untuk dekorasi jurnal kertasmu.",
       icon: <CheckCircle2 className="text-[#FDFCF8]" size={24} />,
     },
     {
       title: "Akses Seumur Hidup",
-      description: "Sekali bayar, milikmu selamanya. File tersimpan aman di Cloud dan bisa diunduh kapan saja.",
+      // UPDATE: Menambahkan "Bebas Cetak Ulang" (Selling Point Utama)
+      description:
+        "Sekali bayar, milikmu selamanya. File tersimpan aman dan kamu bebas mencetak ulang (re-print) sesukamu.",
       icon: <Zap className="text-[#FDFCF8]" size={24} />,
     },
   ];
@@ -41,8 +45,8 @@ export const Benefits = () => {
         {benefits.map((item, idx) => (
           <div
             key={idx}
-            className="group bg-[#FDFCF8] p-8 rounded-3xl border-2 border-[#E5E0D8] hover:border-[#8DA399] transition-all duration-300 hover:-translate-y-2 shadow-[4px_4px_0px_0px_rgba(62,54,46,0.05)] hover:shadow-[8px_8px_0px_0px_rgba(141,163,153,0.2)]">
-            <div className="w-14 h-14 bg-[#3E362E] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg">
+            className="group bg-[#FDFCF8] p-8 rounded-3xl border-2 border-[#E5E0D8]  hover:border-[#8DA399] transition-all duration-300 hover:-translate-y-2 shadow-[4px_4px_0px_0px_rgba(62,54,46,0.05)] hover:shadow-[8px_8px_0px_0px_rgba(141,163,153,0.2)]">
+            <div className="w-14 h-14 bg-[#3E362E] rounded-2xl flex items-center justify-center mb-6 group-hover:rotate-6 group-hover:scale-110 transition-transform shadow-lg">
               {item.icon}
             </div>
             <h3 className="text-xl font-bold text-[#3E362E] mb-3 group-hover:text-[#8DA399] transition-colors">

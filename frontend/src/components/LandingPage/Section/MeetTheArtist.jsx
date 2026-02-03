@@ -51,7 +51,7 @@ export const MeetTheArtist = () => {
                 Hi, aku Abdian. Di sela-sela hari-hariku, aku selalu menyempatkan diri untuk mencoba berbagai hal, salah
                 satunya menggambar. Aku mulai menggambar (terutama menggambar tradisional) sejak bulan{" "}
                 <span className="text-[#8DA399] font-bold">Juni 2025</span>. Tanpa sadar, aku menikmati prosesnya dan
-                hasil gambarku lumayan bagus juga (menurutku).
+                hasil gambarku lumayan bagus juga (menurutku, hehe).
               </p>
 
               <p>

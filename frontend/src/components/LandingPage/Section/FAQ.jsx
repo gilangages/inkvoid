@@ -20,7 +20,7 @@ export const FAQ = () => {
     {
       question: "Apakah boleh dicetak fisik?",
       answer:
-        "Boleh banget! Karena resolusinya tinggi, kamu bisa mencetaknya untuk ditempel di buku tulis fisik atau dekorasi kamar (penggunaan pribadi/personal use only ya).",
+        "Boleh banget! Karena ini file digital, kamu bebas mencetaknya berulang kali (unlimited) untuk ditempel di buku atau dekorasi kamar. Kalau rusak, tinggal print lagi!",
     },
     {
       question: "Cara downloadnya bagaimana?",

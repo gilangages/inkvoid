@@ -3,16 +3,18 @@ import { ShoppingBag, CreditCard, MessageCircle, Download } from "lucide-react";
 export const HowToOrder = () => {
   const steps = [
     {
-      title: "Pilih Produk Digital",
+      title: "Pilih Koleksi Digital",
+      // Fokus: Menjelaskan produk dengan bahasa baku
       description:
-        "Telusuri katalog lengkap kami dan pilih koleksi stiker yang sesuai dengan preferensi estetika serta kebutuhan jurnal Anda.",
+        "Telusuri koleksi lengkap kami. Seluruh paket stiker tersedia dengan harga tetap Rp10.000, mencakup format siap cetak (A4) dan digital (PNG).",
       icon: <ShoppingBag size={20} className="text-[#FDFCF8]" />,
     },
     {
-      title: "Lakukan Pembayaran",
+      title: "Selesaikan Pembayaran",
+      // Fokus: Instruksi transfer yang sopan
       description: (
         <div className="space-y-4">
-          <p>Silakan selesaikan pembayaran melalui transfer bank ke rekening resmi kami berikut:</p>
+          <p>Silakan lakukan transfer sesuai nominal produk (Rp10.000) ke rekening resmi berikut:</p>
           <div className="bg-[#F3F0E9] p-5 rounded-xl border border-[#E5E0D8] relative group hover:border-[#8DA399] hover:shadow-md transition-all duration-300">
             <div className="flex justify-between items-start mb-2">
               <p className="font-bold text-[#3E362E] text-xs uppercase tracking-widest">Bank Jago</p>
@@ -29,27 +31,29 @@ export const HowToOrder = () => {
     },
     {
       title: "Konfirmasi Pesanan",
+      // Fokus: Arahan verifikasi standar
       description: (
         <div className="space-y-3">
           <p>
-            Setelah pembayaran berhasil, klik tombol <b>'BUNGKUS VIA WHATSAPP'</b> pada halaman produk untuk
-            memverifikasi pesanan Anda melalui WhatsApp Admin.
+            Setelah pembayaran berhasil, mohon klik tombol <b>'Beli via WhatsApp'</b> pada halaman produk untuk
+            memverifikasi bukti transfer dengan Admin.
           </p>
           <div className="inline-flex items-center gap-2 bg-[#FDFCF8] border border-[#E5E0D8] px-3 py-2 rounded-lg text-xs font-medium text-[#6B5E51] shadow-sm">
             <span className="text-base">🕒</span>
             <span>Jam Operasional: 07:00 - 20:00 WIB</span>
           </div>
           <p className="text-xs text-[#8C8478] italic leading-relaxed">
-            *Konfirmasi yang dilakukan di luar jam operasional akan kami proses pada hari kerja berikutnya.
+            *Pesan yang masuk di luar jam operasional akan diproses pada hari berikutnya.
           </p>
         </div>
       ),
       icon: <MessageCircle size={20} className="text-[#FDFCF8]" />,
     },
     {
-      title: "Akses Produk",
+      title: "Terima & Unduh",
+      // Fokus: Menjelaskan akses produk tanpa bahasa 'marketing' berlebihan
       description:
-        "Tautan unduhan (Google Drive) akan dikirimkan secara pribadi segera setelah bukti pembayaran terverifikasi. Produk siap digunakan.",
+        "Tautan unduhan pribadi (Google Drive) akan dikirimkan setelah verifikasi selesai. File stiker siap dicetak ulang (Printable) atau digunakan secara digital.",
       icon: <Download size={20} className="text-[#FDFCF8]" />,
     },
   ];

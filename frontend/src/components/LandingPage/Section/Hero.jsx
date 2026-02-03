@@ -11,7 +11,7 @@ export const Hero = () => {
   };
 
   return (
-    <section className="pt-44 pb-24 px-6 text-center max-w-6xl mx-auto relative overflow-hidden">
+    <section className="pt-44 md:pt-35 pb-24 px-6 text-center max-w-6xl mx-auto relative overflow-hidden">
       {/* --- DEKORASI STIKER (POSISI DIPERBAIKI) --- */}
       {/* Sekarang posisinya "left-4" (masuk dkit), bukan "-left-4" (keluar) */}
 
@@ -58,8 +58,8 @@ export const Hero = () => {
         </h1>
 
         <p className="text-lg md:text-xl text-[#6B5E51] mb-10 max-w-xl mx-auto leading-relaxed font-medium">
-          Hai! Aku hobi gambar stiker. Di sini kamu bisa beli file digitalnya (ZIP), isi stiker transparan & lembaran A4
-          siap print. Tinggal print, gunting, tempel deh!
+          Hai! Aku hobi gambar stiker. Di sini kamu cukup <b>beli sekali</b>, dapat file digital (ZIP) yang bisa kamu{" "}
+          <b>print sepuasnya</b> seumur hidup! Isinya sudah ada format A4 siap cetak & PNG transparan.
         </p>
 
         <div className="flex flex-col sm:flex-row justify-center gap-4">
