@@ -31,13 +31,13 @@ export const Footer = () => {
               <span className="text-[#3E362E] font-black text-sm uppercase tracking-wide">Contact Us</span>
 
               <a
-                href="mailto:lumastore0021@gmail.com"
+                href="mailto:stickerluma@gmail.com"
                 className="group flex items-center gap-2 text-[#6B5E51] text-sm font-medium hover:text-[#8DA399] transition-colors p-2 rounded-lg hover:bg-[#FDFCF8]/50 border border-transparent hover:border-[#E5E0D8]">
                 {/* Icon Mail menggantikan Emoji */}
                 <div className="bg-[#3E362E] text-[#FDFCF8] p-1.5 rounded-md group-hover:bg-[#8DA399] transition-colors">
                   <Mail size={16} strokeWidth={2.5} />
                 </div>
-                <span>lumastore0021@gmail.com</span>
+                <span>stickerluma@gmail.com</span>
               </a>
             </div>
           </div>

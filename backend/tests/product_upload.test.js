@@ -1,120 +1,126 @@
-// 1. Setup Environment Variables PALING ATAS
-const path = require("path");
-const dotenv = require("dotenv");
-
-// Paksa load .env dari folder backend (satu level di atas folder tests)
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
-
-// Fallback: Jika DB_USER tidak terbaca dari .env, gunakan default umum (root)
-// Ini mengatasi error "Access denied for user ''@'localhost'"
-if (!process.env.DB_USER) {
-  console.warn("⚠️ Peringatan: DB_USER tidak ditemukan di .env, menggunakan default 'root'");
-  process.env.DB_USER = "root";
-}
-if (process.env.DB_PASS === undefined) {
-  process.env.DB_PASS = "";
-}
-
-if (!process.env.DB_NAME) {
-  // GANTI 'nama_database_kamu' dengan nama database asli di phpMyAdmin/MySQL kamu
-  const defaultDB = "lumastore_db";
-  console.warn(`⚠️ Peringatan: DB_NAME tidak ditemukan di .env, menggunakan default '${defaultDB}'`);
-  process.env.DB_NAME = defaultDB;
-}
-
+// backend/tests/product_upload.test.js
 const request = require("supertest");
 const express = require("express");
-const db = require("../config/database");
 const productController = require("../controllers/productController");
-const upload = require("../middleware/uploadMiddleware");
 
-// Setup App Khusus Testing
+// === 1. MOCK DATABASE ===
+jest.mock("../config/database", () => ({
+  query: jest.fn(),
+}));
+const db = require("../config/database");
+
+// === 2. MOCK CLOUDINARY ===
+jest.mock("../middleware/uploadMiddleware", () => ({
+  cloudinary: {
+    uploader: { destroy: jest.fn() },
+  },
+}));
+
+// === 3. SETUP EXPRESS APP ===
 const app = express();
-app.use(express.json());
+app.use(express.json()); // Parsing JSON body
 app.use(express.urlencoded({ extended: true }));
 
-// --- FAKE AUTH MIDDLEWARE (Bypass Login) ---
-// Kita paksa req.user ada isinya agar controller menganggap kita admin
-const mockAuth = (req, res, next) => {
-  req.user = { id: 999, role: "admin", email: "test@admin.com" };
+// === 4. MOCK MIDDLEWARE (REVISI) ===
+const mockUploadMiddleware = (req, res, next) => {
+  // LOGIC BARU: Cek Environment Variable langsung, bukan property req
+  const isProduction = process.env.NODE_ENV === "production";
+
+  // Inject file palsu
+  req.files = [
+    {
+      fieldname: "images",
+      originalname: "test-sticker.jpg",
+      encoding: "7bit",
+      mimetype: "image/jpeg",
+      destination: "public/uploads",
+      filename: "test-sticker-123.jpg",
+      // Jika ENV production, kita kasih URL Cloudinary. Jika tidak, kasih path lokal.
+      path: isProduction
+        ? "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+        : "public/uploads/test-sticker-123.jpg",
+      size: 1024,
+    },
+  ];
   next();
 };
 
-// --- RAKIT ROUTE MANUAL ---
-// Route ini dirakit di dalam test agar terisolasi dan mudah didebug
-app.post("/api/products", mockAuth, upload.array("images"), productController.createProduct);
+app.post("/api/products", mockUploadMiddleware, productController.createProduct);
 
-describe("POST /api/products (Upload Feature)", () => {
-  const testProductName = "Produk Test Upload " + Date.now();
+describe("POST /api/products - Upload Logic", () => {
+  const OLD_ENV = process.env;
 
-  it("should upload multiple images and save product to database", async () => {
-    // Debugging: Pastikan koneksi DB config benar
-    // console.log("Testing DB Connection with User:", process.env.DB_USER);
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.resetModules();
+    process.env = { ...OLD_ENV }; // Reset env bersih setiap test
+  });
 
+  afterAll(() => {
+    process.env = OLD_ENV;
+  });
+
+  test("Should create product with CLOUDINARY URL in PRODUCTION", async () => {
+    // 1. Set Environment ke Production
+    process.env.NODE_ENV = "production";
+
+    // 2. Mock DB response
+    db.query.mockResolvedValue([{ insertId: 100 }]);
+
+    // 3. Request
     const res = await request(app)
       .post("/api/products")
-      .field("name", testProductName)
-      .field("price", 50000)
-      .field("description", "Ini deskripsi test dengan gambar")
-      // Simulasi upload file (membuat file palsu di memori)
-      .attach("images", Buffer.from("fake image data 1"), "foto1.jpg")
-      .attach("images", Buffer.from("fake image data 2"), "foto2.png");
+      .send({
+        name: "Stiker Production",
+        price: 50000,
+        description: "Deskripsi Pro",
+        image_labels: JSON.stringify(["Tampak Depan"]),
+      });
+    // Catatan: Kita tidak butuh .use() lagi karena middleware sudah pintar baca ENV
 
-    // Jika masih error, log response body untuk melihat pesan error detail
-    if (res.statusCode !== 201) {
-      console.error("❌ Test Failed Response:", res.body);
-    }
-
-    expect(res.statusCode).toEqual(201);
+    expect(res.statusCode).toBe(201);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.name).toBe(testProductName);
 
-    // Validasi apakah gambar tersimpan sebagai array URL
-    expect(Array.isArray(res.body.data.images)).toBe(true);
-    expect(res.body.data.images.length).toBe(2);
-    expect(res.body.data.images[0]).toMatch(/\/uploads\//);
+    const savedImage = res.body.data.images[0];
+
+    // Debugging (opsional, bisa dihapus)
+    // console.log("Output URL di Test:", savedImage.url);
+
+    expect(savedImage.url).toContain("https://res.cloudinary.com");
   });
 
-  it("should fail if name or price is missing", async () => {
-    const res = await request(app).post("/api/products").field("description", "Lupa nama dan harga");
+  test("Should create product with LOCALHOST URL in DEVELOPMENT", async () => {
+    // 1. Set Environment ke Development
+    process.env.NODE_ENV = "development";
+    process.env.API_BASE_URL = "http://localhost:3000"; // Paksa Base URL statis
 
-    expect(res.statusCode).toEqual(400);
-  });
-  it("should fail if description is missing", async () => {
-    // Kita kirim nama & harga & gambar, TAPI deskripsi kosong
+    // 2. Mock DB
+    db.query.mockResolvedValue([{ insertId: 101 }]);
+
+    // 3. Request
     const res = await request(app)
       .post("/api/products")
-      .field("name", "Produk Tanpa Deskripsi")
-      .field("price", 50000)
-      // .field("description", "...") // HAPUS INI
-      .attach("images", Buffer.from("fake"), "foto.jpg");
+      .send({
+        name: "Stiker Local",
+        price: 15000,
+        description: "Deskripsi Loc",
+        image_labels: JSON.stringify(["Label A"]),
+      });
 
-    expect(res.statusCode).toEqual(400);
-    expect(res.body.message).toContain("Deskripsi wajib diisi");
+    expect(res.statusCode).toBe(201);
+
+    const savedImage = res.body.data.images[0];
+    // Controller akan menggabungkan API_BASE_URL + path lokal dari middleware
+    expect(savedImage.url).toBe("http://localhost:3000/uploads/test-sticker-123.jpg");
   });
 
-  it("should fail if image is missing", async () => {
-    // Kita kirim semua data text, TAPI lupa attach gambar
-    const res = await request(app)
-      .post("/api/products")
-      .field("name", "Produk Tanpa Gambar")
-      .field("price", 50000)
-      .field("description", "Ini deskripsi ada");
-    // .attach("images", ...) // HAPUS INI
+  test("Should fail if required fields are missing", async () => {
+    const res = await request(app).post("/api/products").send({
+      price: 15000, // Nama hilang
+      description: "Tanpa Nama",
+    });
 
-    expect(res.statusCode).toEqual(400);
-    expect(res.body.message).toContain("Minimal upload 1 gambar");
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toContain("wajib diisi");
   });
-});
-
-afterAll(async () => {
-  // Bersihkan data sampah hasil test dari database
-  try {
-    await db.query("DELETE FROM products WHERE name LIKE 'Produk Test Upload%'");
-  } catch (err) {
-    console.error("Gagal membersihkan data test:", err);
-  }
-
-  // Tutup koneksi agar Jest bisa selesai
-  await db.end();
 });

@@ -76,7 +76,7 @@ export default function TermsAndConditions() {
           <section>
             <h2 className="text-xl font-bold text-[#3E362E] mb-3">5. Hubungi Kami</h2>
             <p>Jika file belum diterima atau ada kendala download, hubungi kami di:</p>
-            <p className="font-bold mt-2 text-[#3E362E]">Email: lumastore0021@gmail.com</p>
+            <p className="font-bold mt-2 text-[#3E362E]">Email: stickerluma@gmail.com</p>
           </section>
         </div>
       </main>

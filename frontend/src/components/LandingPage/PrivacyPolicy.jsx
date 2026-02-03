@@ -53,7 +53,7 @@ export default function PrivacyPolicy() {
             <h2 className="text-xl font-bold text-[#3E362E] mb-3">4. Hubungi Kami</h2>
             <p>
               Jika Anda memiliki pertanyaan tentang privasi data Anda, silakan hubungi kami di:
-              <span className="font-bold text-[#3E362E]"> lumastore0021@gmail.com</span>
+              <span className="font-bold text-[#3E362E]"> stickerluma@gmail.com</span>
             </p>
           </section>
         </div>

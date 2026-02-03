@@ -49,12 +49,37 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
   };
 
   useEffect(() => {
+    if (isOpen) {
+      // Push state agar back button menutup modal, bukan menutup tab browser
+      window.history.pushState({ modalOpen: true }, "", window.location.href);
+
+      const handlePopState = (event) => {
+        console.log(event);
+        // Jika user tekan back, tutup modal
+        onClose();
+      };
+
+      window.addEventListener("popstate", handlePopState);
+
+      return () => {
+        window.removeEventListener("popstate", handlePopState);
+        // Cek history state, jika masih ada 'modalOpen', kita mundur manual
+        // untuk membersihkan history stack
+        if (window.history.state?.modalOpen) {
+          window.history.back();
+        }
+      };
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     const handleKeyDown = (e) => {
       if (!isZoomOpen) return;
       if (e.key === "ArrowRight") nextImage();
       if (e.key === "ArrowLeft") prevImage();
       if (e.key === "Escape") setIsZoomOpen(false);
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isZoomOpen, currentImgIdx, images.length]);
@@ -165,9 +190,7 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
             <div className="mb-8">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#3E362E]/5 rounded-lg mb-4 border border-[#3E362E]/10">
                 <ImageIcon size={12} className="text-[#3E362E]" />
-                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#3E362E]">
-                  Digital Artwork
-                </span>
+                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#3E362E]">Karya Digital</span>
               </div>
 
               <h2 className="text-3xl font-black text-[#3E362E] mb-4 leading-[1.1] uppercase italic tracking-tight">

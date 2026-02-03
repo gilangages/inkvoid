@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAllProducts } from "../../lib/api/ProductApi";
 import { purchaseProduct } from "../../lib/api/PaymentApi";
-import lumaLogo from "../../assets/luma-sticker.png";
 
 // Import Components
 import { Navbar } from "./Section/Navbar";
@@ -15,33 +14,10 @@ import { WhatsAppSection } from "./Section/WhatsAppSection";
 import { SuccessModal } from "./SuccessModal";
 import { ErrorModal } from "./ErrorModal";
 
-const DUMMY_PRODUCTS = [
-  {
-    id: 1,
-    name: "Paket Stiker Luma Basic",
-    price: 15000,
-    description: "Koleksi stiker vinyl tahan air dengan karakter Luma yang lucu. Cocok untuk laptop dan helm.",
-    image_url: lumaLogo, // Bisa ganti link gambar asli jika ada
-  },
-  {
-    id: 2,
-    name: "Stiker Edisi Developer",
-    price: 10000,
-    description: "Stiker khusus programmer: React, Node.js, dan kopi. Bahan high quality matte.",
-    image_url: lumaLogo,
-  },
-  {
-    id: 3,
-    name: "Bundle Hemat 3 Pack",
-    price: 10000,
-    description: "Dapatkan 3 varian sekaligus dengan harga lebih murah. Stok terbatas!",
-    image_url: lumaLogo,
-  },
-];
-
 export const HomePage = () => {
-  const [products, setProducts] = useState(DUMMY_PRODUCTS);
-  const [_, setLoading] = useState(true);
+  // Inisialisasi dengan array kosong, bukan DUMMY_PRODUCTS
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -50,8 +26,6 @@ export const HomePage = () => {
   const [isErrorOpen, setIsErrorOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // --- 1. PINDAHKAN FUNGSI HELPER KE ATAS (Best Practice) ---
-  // Agar aman dipanggil di dalam useEffect
   const showError = (msg) => {
     setErrorMessage(msg);
     setIsErrorOpen(true);
@@ -63,25 +37,24 @@ export const HomePage = () => {
   };
 
   useEffect(() => {
-    // --- 2. PERBAIKAN ERROR "Cascading Renders" ---
-    // Cek Titipan Pesan dengan setTimeout agar tidak synchronous
+    // 1. Cek Pesan Sukses Midtrans dari LocalStorage
     const paymentStatus = localStorage.getItem("paymentSuccess");
     if (paymentStatus === "true") {
       setTimeout(() => {
-        setIsSuccessOpen(true); // Buka modal dengan sedikit delay
+        setIsSuccessOpen(true);
       }, 500);
       localStorage.removeItem("paymentSuccess");
     }
 
-    // 3. Setup Snap Midtrans
-    const clientKey = "Mid-client-9k6P5r8pEQkQaEan"; // GANTI KEY KAMU
+    // 2. Setup Snap Midtrans
+    const clientKey = "Mid-client-9k6P5r8pEQkQaEan"; // Pastikan Key Sesuai
     const script = document.createElement("script");
     script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
     script.setAttribute("data-client-key", clientKey);
     script.async = true;
     document.body.appendChild(script);
 
-    // 4. Fetch Data
+    // 3. Fetch Data Real
     getAllProducts()
       .then((res) => {
         if (!res.ok) throw new Error("Gagal memuat data");
@@ -91,21 +64,23 @@ export const HomePage = () => {
         if (json.data && json.data.length > 0) {
           setProducts(json.data);
         } else {
-          console.log("Database kosong, menggunakan Dummy Data untuk tampilan.");
-          setProducts(DUMMY_PRODUCTS);
+          // Jika tidak ada data, set array kosong (JANGAN GUNAKAN DUMMY)
+          setProducts([]);
         }
       })
       .catch((err) => {
-        console.error(err);
-        setProducts(DUMMY_PRODUCTS);
-        showError("Gagal memuat produk asli, menampilkan contoh."); // Sekarang aman dipanggil
+        console.error("Error fetching products:", err);
+        // Jika error, biarkan kosong agar tidak membingungkan user dengan produk palsu
+        setProducts([]);
+        // Optional: Tidak perlu show error popup jika hanya masalah fetch (cukup console)
+        // atau gunakan UI state error di bagian ProductShowcase
       })
       .finally(() => setLoading(false));
 
     return () => {
       if (document.body.contains(script)) document.body.removeChild(script);
     };
-  }, []); // Dependency array kosong aman karena showError didefinisikan di dalam komponen
+  }, []);
 
   const handleProcessPayment = async (product, customerName, customerEmail) => {
     setIsModalOpen(false);
@@ -122,11 +97,7 @@ export const HomePage = () => {
         window.snap.pay(data.token, {
           onSuccess: (result) => {
             console.log("Success:", result);
-            // Simpan tanda sukses
             localStorage.setItem("paymentSuccess", "true");
-            // Reload halaman (opsional, tapi bagus untuk memastikan cart/state bersih)
-            // Atau kalau mau manual tanpa reload:
-            // setIsSuccessOpen(true);
             window.location.reload();
           },
           onPending: (result) => {
@@ -155,7 +126,10 @@ export const HomePage = () => {
       <div className="flex-grow">
         <Hero />
         <Benefits />
-        <ProductShowcase products={products} loading={false} onBuy={handleOpenModal} />
+
+        {/* ProductShowcase akan menampilkan pesan kosong jika products = [] */}
+        <ProductShowcase products={products} loading={loading} onBuy={handleOpenModal} />
+
         <FAQ />
         <WhatsAppSection />
       </div>
@@ -168,7 +142,6 @@ export const HomePage = () => {
         onSubmit={handleProcessPayment}
       />
 
-      {/* MODAL KOMPONEN */}
       <SuccessModal isOpen={isSuccessOpen} onClose={() => setIsSuccessOpen(false)} />
       <ErrorModal isOpen={isErrorOpen} onClose={() => setIsErrorOpen(false)} message={errorMessage} />
 

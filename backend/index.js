@@ -13,17 +13,37 @@ const app = express();
 const PORT = process.env.PORT;
 const authRoutes = require("./routes/authRoutes");
 
-// Middleware
-app.use(cors());
+// Izinkan Localhost DAN Domain Vercel kamu nanti
+const allowedOrigins = [
+  "http://localhost:5173", // Untuk development lokal
+  "https://lumasticker.vercel.app", // GANTI dengan domain asli Vercel kamu nanti
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // (!origin) membolehkan request dari Postman/Server-to-server
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true, // Jika pakai cookies/auth header
+  }),
+);
+
 app.use(express.json()); // Supaya bisa baca JSON dari Frontend
+
+// === PERBAIKAN UTAMA DI SINI ===
+// Izinkan akses ke folder public/uploads secara statis
+app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 app.use("/api/products", productRoutes); // <--- Pasang Jalurnya di sini
 app.use("/api/payment", paymentRoutes);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use("/api/admin", authRoutes);
 app.use(express.urlencoded({ extended: true })); // <--- Tambahkan ini untuk form-data
-
-app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 // Test Route
 app.get("/", (req, res) => {

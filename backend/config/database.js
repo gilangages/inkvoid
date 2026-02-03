@@ -1,26 +1,47 @@
 const mysql = require("mysql2");
 require("dotenv").config();
 
-// Gunakan fallback (||) agar jika .env kosong/tidak terbaca, sistem tetap jalan dengan default
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root", // Default ke root jika kosong
-  password: process.env.DB_PASS || "", // Default password kosong
-  database: process.env.DB_NAME || "lumastore_db", // Pastikan nama DB benar
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+let pool;
 
-// Menggunakan Promise agar bisa pakai async/await (Modern Style)
+// Cek apakah ada DATABASE_URL di .env (Prioritas untuk TiDB/Production)
+if (process.env.DATABASE_URL) {
+  console.log("🌐 Menggunakan koneksi Cloud (TiDB)...");
+
+  pool = mysql.createPool({
+    uri: process.env.DATABASE_URL, // Menggunakan Connection String lengkap
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    // TiDB membutuhkan koneksi SSL yang aman
+    ssl: {
+      rejectUnauthorized: true,
+      minVersion: "TLSv1.2",
+    },
+  });
+} else {
+  // Fallback ke Localhost (Jika tidak ada DATABASE_URL)
+  console.log("🏠 Menggunakan koneksi Localhost...");
+
+  pool = mysql.createPool({
+    host: process.env.DB_HOST || "localhost",
+    user: process.env.DB_USER || "root",
+    password: process.env.DB_PASS || "",
+    database: process.env.DB_NAME || "lumastore_db",
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  });
+}
+
+// Menggunakan Promise Wrapper
 const db = pool.promise();
 
-// Cek koneksi saat awal jalan (Optional, buat debugging aja)
+// Cek koneksi saat awal jalan
 pool.getConnection((err, connection) => {
   if (err) {
-    console.error("❌ Database Connection Failed:", err.message);
+    console.error("❌ Gagal Terhubung ke Database:", err.message);
   } else {
-    console.log("✅ Database Connected Successfully!");
+    console.log("✅ Berhasil Terhubung ke Database!");
     connection.release();
   }
 });

@@ -73,7 +73,6 @@ export default function ProductList() {
     try {
       const response = await bulkDeleteProducts(token, selectedIds);
       const responseBody = await response.json();
-      console.log(responseBody);
       if (response.ok) {
         await alertSuccess(responseBody.message);
         setSelectedIds([]);
@@ -110,10 +109,22 @@ export default function ProductList() {
   };
 
   const handleViewImage = (product) => {
-    const images =
-      product.images && Array.isArray(product.images) && product.images.length > 0
-        ? product.images
-        : [product.image_url];
+    let images = [];
+
+    // Cek apakah product.images ada dan valid
+    if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+      images = product.images.map((img) => {
+        // [FIX] Jika img adalah object (format baru), ambil property .url
+        if (typeof img === "object" && img !== null) {
+          return img.url;
+        }
+        // Jika string (format lama), kembalikan langsung
+        return img;
+      });
+    } else if (product.image_url) {
+      images = [product.image_url];
+    }
+
     setCurrentImages(images);
     setCurrentIndex(0);
     setIsModalOpen(true);
@@ -136,13 +147,22 @@ export default function ProductList() {
 
   async function handleDelete(id) {
     if (!(await alertConfirm("Apakah kamu yakin mau menghapus produk ini?"))) return;
-    const response = await productDelete(token, id);
-    if (response.status === 200) {
-      await alertSuccess("Produk berhasil dihapus!");
-      setReload(!reload);
-    } else {
+    try {
+      const response = await productDelete(token, id);
       const responseBody = await response.json();
-      alertError(responseBody.message);
+
+      if (response.ok) {
+        // Logic pesan sekarang dinamis sesuai respon cerdas dari backend tadi
+        // Kalo bersih: "Produk berhasil dihapus!"
+        // Kalo soft delete: "Produk diarsipkan..."
+        await alertSuccess(responseBody.message);
+        setReload(!reload);
+      } else {
+        alertError(responseBody.message || "Terjadi kesalahan saat menghapus.");
+      }
+    } catch (error) {
+      console.error(error);
+      alertError("Gagal menghubungi server.");
     }
   }
 

@@ -1,55 +1,27 @@
+// backend/tests/payment.test.js
 const request = require("supertest");
 const express = require("express");
 
-// --- 1. SETUP MOCK MIDTRANS (TEKNIK EXPOSED MOCK) ---
-jest.mock("midtrans-client", () => {
-  // Buat mock function DI DALAM factory supaya aman dari error initialization
-  const mockFunc = jest.fn().mockResolvedValue({
-    token: "TOKEN-PALSU-DARI-TEST",
-    redirect_url: "https://app.sandbox.midtrans.com/snap/v2/vtweb/TOKEN-PALSU",
-  });
-
-  return {
-    Snap: jest.fn().mockImplementation(() => {
-      return {
-        // Setiap kali backend panggil new Snap(), dia dapet object ini
-        createTransaction: mockFunc,
-      };
-    }),
-    // RAHASIA: Kita tempel function ini di sini supaya bisa diakses dari luar
-    __mockCreateTransaction: mockFunc,
-  };
-});
-
-// --- 2. SETUP MOCK DATABASE ---
+// --- 1. MOCK DATABASE SAJA (Midtrans tidak perlu dimock lagi) ---
 jest.mock("../config/database", () => ({
   query: jest.fn(),
 }));
 
-// --- 3. IMPORT MODUL ---
-// Ambil mock function yang sudah kita "tempel" tadi
-const midtransClient = require("midtrans-client");
-const createTransactionMock = midtransClient.__mockCreateTransaction;
 const db = require("../config/database");
-
-// Load Routes (ini akan mentrigger 'new Snap()' di controller)
 const paymentRoutes = require("../routes/paymentRoutes");
 
 const app = express();
 app.use(express.json());
 app.use("/api/payment", paymentRoutes);
 
-describe("Payment Controller Logic", () => {
+describe("Payment Controller (WhatsApp Mode)", () => {
   beforeEach(() => {
-    // Reset histori panggilan function sebelum tiap test
-    // Sekarang aman karena createTransactionMock diambil langsung dari sumbernya
-    createTransactionMock.mockClear();
     db.query.mockClear();
   });
 
-  // --- TEST CASE 1: BERHASIL MEMBUAT TRANSAKSI ---
-  it("Harus berhasil membuat token transaksi (200 OK)", async () => {
-    // Mock Database: Produk Ditemukan
+  // --- TEST CASE 1: BERHASIL MEMBUAT ORDER MANUAL ---
+  it("Harus berhasil membuat order manual & simpan ke DB (200 OK)", async () => {
+    // Mock 1: Produk Ditemukan
     db.query.mockResolvedValueOnce([
       [
         {
@@ -59,38 +31,36 @@ describe("Payment Controller Logic", () => {
         },
       ],
     ]);
-    // Mock Database: Insert Transaksi Sukses
-    db.query.mockResolvedValueOnce([{ insertId: 1 }]);
+    // Mock 2: Insert Transaksi Sukses
+    db.query.mockResolvedValueOnce([{ insertId: 123 }]);
 
     // Kirim Request
     const res = await request(app).post("/api/payment/purchase").send({
       product_id: 1,
-      customer_name: "Tester Ganteng",
-      customer_email: "test@example.com",
+      customer_name: "Abdian",
+      customer_email: "abdian@test.com",
     });
 
-    // Verifikasi
+    // Verifikasi Response
     expect(res.statusCode).toEqual(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.token).toBe("TOKEN-PALSU-DARI-TEST");
+    expect(res.body.order_id).toMatch(/LUMA-WA-/); // Pastikan format ID benar
+    expect(res.body.token).toBeNull(); // Tidak boleh ada token Midtrans
 
-    // Cek apakah Midtrans dipanggil dengan parameter yang benar
-    expect(createTransactionMock).toHaveBeenCalledTimes(1);
-    expect(createTransactionMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        transaction_details: expect.objectContaining({
-          gross_amount: 15000,
-        }),
-        customer_details: expect.objectContaining({
-          email: "test@example.com",
-        }),
-      }),
-    );
+    // Verifikasi Database Dipanggil
+    // Panggilan pertama: Select Product
+    expect(db.query).toHaveBeenNthCalledWith(1, expect.stringContaining("SELECT * FROM products"), [1]);
+
+    // Panggilan kedua: Insert Transaction
+    // Kita cek apakah status yang diinsert adalah 'pending' dan token 'whatsapp-manual'
+    const insertCall = db.query.mock.calls[1];
+    expect(insertCall[0]).toContain("INSERT INTO transactions");
+    expect(insertCall[1]).toEqual(expect.arrayContaining(["abdian@test.com", "whatsapp-manual"]));
   });
 
   // --- TEST CASE 2: PRODUK TIDAK DITEMUKAN ---
-  it("Harus gagal jika produk tidak ada di database (404)", async () => {
-    // Mock Database: Produk Kosong (Array kosong dalam array)
+  it("Harus gagal jika produk tidak valid (404)", async () => {
+    // Mock: Produk Kosong
     db.query.mockResolvedValueOnce([[]]);
 
     const res = await request(app).post("/api/payment/purchase").send({
@@ -100,35 +70,6 @@ describe("Payment Controller Logic", () => {
     });
 
     expect(res.statusCode).toEqual(404);
-
-    // Pastikan Midtrans TIDAK dipanggil sama sekali
-    expect(createTransactionMock).not.toHaveBeenCalled();
-  });
-
-  // --- TEST CASE 3: HARGA FORMAT STRING ---
-  it("Harus tetap jalan walaupun harga di database format string", async () => {
-    // Mock Database: Harga String
-    db.query.mockResolvedValueOnce([
-      [
-        {
-          id: 2,
-          name: "Stiker Mahal",
-          price: "20000.00",
-        },
-      ],
-    ]);
-    db.query.mockResolvedValueOnce([{ insertId: 2 }]);
-
-    const res = await request(app).post("/api/payment/purchase").send({
-      product_id: 2,
-      customer_name: "Tester",
-      customer_email: "test@example.com",
-    });
-
-    expect(res.statusCode).toEqual(200);
-
-    // Cek apakah Midtrans menerima angka (20000), bukan string
-    const params = createTransactionMock.mock.calls[0][0];
-    expect(params.transaction_details.gross_amount).toBe(20000);
+    expect(res.body.message).toContain("tidak ditemukan");
   });
 });

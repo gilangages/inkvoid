@@ -16,6 +16,9 @@ jest.mock("../controllers/productController", () => ({
   getAllProducts: (req, res) => res.json([]),
   createProduct: (req, res) => res.status(201).json({ message: "Created" }),
   deleteProduct: (req, res) => res.status(200).json({ message: "Deleted" }),
+  // TAMBAHKAN DUA FUNGSI INI AGAR ROUTER TIDAK CRASH:
+  updateProduct: (req, res) => res.status(200).json({ message: "Updated" }),
+  bulkDeleteProducts: (req, res) => res.status(200).json({ message: "Bulk Deleted" }),
 }));
 
 describe("Admin Auth & Security", () => {
