@@ -14,6 +14,7 @@ import { CheckoutModal } from "./CheckoutModal";
 import { WhatsAppSection } from "./Section/WhatsAppSection";
 import { SuccessModal } from "./SuccessModal";
 import { ErrorModal } from "./ErrorModal";
+import { MeetTheArtist } from "./Section/MeetTheArtist";
 
 export const HomePage = () => {
   // Inisialisasi dengan array kosong
@@ -120,6 +121,7 @@ Terima kasih!`.trim();
 
         <ProductShowcase products={products} loading={loading} onBuy={handleOpenModal} />
 
+        <MeetTheArtist />
         <FAQ />
         <WhatsAppSection />
       </div>
