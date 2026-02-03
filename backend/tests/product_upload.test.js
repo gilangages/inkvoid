@@ -92,7 +92,7 @@ describe("POST /api/products - Upload Logic", () => {
   test("Should create product with LOCALHOST URL in DEVELOPMENT", async () => {
     // 1. Set Environment ke Development
     process.env.NODE_ENV = "development";
-    process.env.API_BASE_URL = "http://localhost:5000"; // Paksa Base URL statis
+    process.env.API_BASE_URL = "http://localhost:3000"; // Paksa Base URL statis
 
     // 2. Mock DB
     db.query.mockResolvedValue([{ insertId: 101 }]);
@@ -111,7 +111,7 @@ describe("POST /api/products - Upload Logic", () => {
 
     const savedImage = res.body.data.images[0];
     // Controller akan menggabungkan API_BASE_URL + path lokal dari middleware
-    expect(savedImage.url).toBe("http://localhost:5000/uploads/test-sticker-123.jpg");
+    expect(savedImage.url).toBe("http://localhost:3000/uploads/test-sticker-123.jpg");
   });
 
   test("Should fail if required fields are missing", async () => {

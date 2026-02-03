@@ -12,12 +12,16 @@ const safeParseJSON = (jsonString, fallback = []) => {
   }
 };
 
-// === HELPER: Dynamic Base URL Generator ===
+// === HELPER: Dynamic Base URL Generator (Lebih Robust) ===
 const getBaseUrl = (req) => {
+  // 1. Prioritaskan Environment Variable (Penting untuk Production/Deployment)
+  if (process.env.API_BASE_URL) {
+    return process.env.API_BASE_URL;
+  }
+  // 2. Fallback ke Request Host (Untuk Localhost)
   const protocol = req.protocol;
   const host = req.get("host");
-  // Gunakan env variable jika ada, jika tidak gunakan request host
-  return process.env.API_BASE_URL || `${protocol}://${host}`;
+  return `${protocol}://${host}`;
 };
 
 // === HELPER: Hapus File (Support Local Path & Cloudinary) ===
@@ -63,6 +67,7 @@ const getAllProducts = async (req, res) => {
 
     const products = rows.map((product) => {
       let images = [];
+      // Parsing data images
       if (typeof product.images === "string") {
         images = safeParseJSON(product.images, []);
       } else if (Array.isArray(product.images)) {
@@ -71,35 +76,57 @@ const getAllProducts = async (req, res) => {
         images = [product.image_url];
       }
 
-      // === LOGIC UTAMA: RAKIT URL ===
+      // === LOGIC UTAMA: NORMALISASI URL ===
       const normalizedImages = images.map((img) => {
         let rawUrl = typeof img === "string" ? img : img.url;
         let finalUrl = rawUrl;
 
-        // Cek 1: Jika ini file lokal (path diawali /uploads) dan BUKAN full URL (http)
-        if (rawUrl && rawUrl.startsWith("/uploads") && !rawUrl.startsWith("http")) {
-          finalUrl = `${baseUrl}${rawUrl}`;
-        }
-        // Cek 2: Compatibility Data Lama (jika di DB cuma nama file doang tanpa /uploads)
-        else if (rawUrl && !rawUrl.startsWith("http") && !rawUrl.includes("/")) {
-          finalUrl = `${baseUrl}/uploads/${rawUrl}`;
+        // Pastikan rawUrl valid string
+        if (typeof rawUrl === "string") {
+          // Cek apakah ini Full URL (Cloudinary / External)
+          if (rawUrl.startsWith("http")) {
+            finalUrl = rawUrl;
+          }
+          // Cek apakah ini File Lokal
+          else {
+            // Bersihkan slash ganda atau slash depan agar konsisten
+            // Contoh: "/uploads/foto.jpg" atau "uploads/foto.jpg" atau "foto.jpg"
+
+            let cleanPath = rawUrl;
+
+            // Jika path tidak diawali 'uploads', kita asumsikan itu nama file saja dan tambahkan '/uploads/'
+            if (!cleanPath.includes("uploads")) {
+              cleanPath = `/uploads/${cleanPath.replace(/^\/+/, "")}`;
+            }
+
+            // Pastikan diawali slash "/" untuk digabung dengan domain
+            if (!cleanPath.startsWith("/")) {
+              cleanPath = `/${cleanPath}`;
+            }
+
+            // Gabungkan
+            finalUrl = `${baseUrl}${cleanPath}`;
+          }
         }
 
+        // Return object standar
         if (typeof img === "string") {
-          return { url: finalUrl, label: rawUrl.split("/").pop() };
+          return { url: finalUrl, label: "Product Image" };
         }
         return {
           ...img,
-          url: finalUrl, // Update URL jadi full untuk Frontend
-          label: img.label || rawUrl.split("/").pop(),
+          url: finalUrl, // URL yang sudah fix full domain
         };
       });
 
+      // Filter gambar yang URL-nya null/undefined
+      const validImages = normalizedImages.filter((img) => img.url);
+
       return {
         ...product,
-        images: normalizedImages,
-        // Update field image_url legacy juga agar konsisten
-        image_url: normalizedImages.length > 0 ? normalizedImages[0].url : null,
+        images: validImages,
+        // Pastikan image_url legacy juga selalu terisi dengan data valid pertama
+        image_url: validImages.length > 0 ? validImages[0].url : "https://placehold.co/600x400?text=No+Image",
       };
     });
 
