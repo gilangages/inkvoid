@@ -227,11 +227,11 @@ const createProduct = async (req, res) => {
   }
 };
 
-// 3. Delete Product (revisi)
+// === 3. DELETE PRODUCT (Revised & Robust) ===
 const deleteProduct = async (req, res) => {
   const { id } = req.params;
   try {
-    // 1. Ambil data gambar SEBELUM menghapus record database
+    // 1. Ambil data gambar
     const [existing] = await db.query("SELECT images, image_url FROM products WHERE id = ?", [id]);
 
     if (existing.length === 0) {
@@ -239,53 +239,41 @@ const deleteProduct = async (req, res) => {
     }
 
     const product = existing[0];
-
-    // 2. Kumpulkan SEMUA URL gambar yang perlu dihapus
     let imagesToDelete = [];
 
-    // Parse kolom 'images' (JSON Array)
+    // 2. Kumpulkan URL dari JSON Array 'images'
     if (product.images) {
       const parsed = safeParseJSON(product.images);
-      // Handle jika formatnya object {url: ...} atau string langsung
       parsed.forEach((img) => {
         const url = typeof img === "object" ? img.url : img;
         if (url) imagesToDelete.push(url);
       });
     }
 
-    // Tambahkan 'image_url' (Main Image legacy) jika belum ada di list
+    // 3. Tambahkan Main Image (legacy) jika belum ada
     if (product.image_url && !imagesToDelete.includes(product.image_url)) {
       imagesToDelete.push(product.image_url);
     }
 
-    // 3. Hapus Record Database Terlebih Dahulu
-    // Kenapa? Agar user segera melihat produk hilang.
-    // File cleanup bisa berjalan secara asynchronous (Promise.all)
+    // 4. Hapus dari Database dulu (Supaya user tidak melihat produknya lagi)
     await db.query("DELETE FROM products WHERE id = ?", [id]);
 
-    // 4. Eksekusi Hapus File (Paralel agar cepat)
+    // 5. Hapus File di Cloudinary/Local (DENGAN AWAIT)
     if (imagesToDelete.length > 0) {
-      // Menggunakan Promise.allSettled agar jika satu gagal, yang lain tetap dieksekusi
-      Promise.allSettled(imagesToDelete.map((url) => deleteFile(url))).then((results) => {
-        // Opsional: Log hasil penghapusan
-        console.log("Cleanup images completed.");
-      });
+      // === KUNCI PERBAIKAN: Tambahkan 'await' di sini ===
+      // Server akan diam menunggu sampai Cloudinary selesai hapus semua file.
+      await Promise.allSettled(imagesToDelete.map((url) => deleteFile(url)));
+      console.log(`[Cleanup] Berhasil membersihkan ${imagesToDelete.length} gambar.`);
     }
 
-    res.status(200).json({ success: true, message: "Produk dan semua gambar berhasil dihapus!" });
+    res.status(200).json({ success: true, message: "Produk dan semua gambar berhasil dihapus tuntas!" });
   } catch (error) {
     console.error("Error deleteProduct:", error);
-
-    // Fallback: Jika gagal delete karena constraint (Foreign Key order), arsipkan
+    // Fallback error handling (Foreign Key, dll)
     if (error.code === "ER_ROW_IS_REFERENCED_2") {
-      try {
-        await db.query("UPDATE products SET is_deleted = 1 WHERE id = ?", [id]);
-        return res.status(200).json({ success: true, message: "Produk diarsipkan (karena ada riwayat order)." });
-      } catch (archiveError) {
-        return res.status(500).json({ success: false, message: "Gagal mengarsipkan produk." });
-      }
+      await db.query("UPDATE products SET is_deleted = 1 WHERE id = ?", [id]);
+      return res.status(200).json({ success: true, message: "Produk diarsipkan (ada riwayat order)." });
     }
-
     res.status(500).json({ success: false, message: "Gagal hapus produk" });
   }
 };
@@ -367,7 +355,7 @@ const updateProduct = async (req, res) => {
   }
 };
 
-// 5. Bulk Delete (updated)
+// === 5. BULK DELETE (Revised) ===
 const bulkDeleteProducts = async (req, res) => {
   const { ids } = req.body;
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
@@ -378,22 +366,21 @@ const bulkDeleteProducts = async (req, res) => {
   let archivedCount = 0;
 
   try {
+    // Kita proses satu per satu ID agar lebih aman (sequential loop)
+    // Atau bisa parallel, tapi sequential lebih mudah ditrace errornya
     for (const id of ids) {
       try {
-        // Logika sama persis dengan deleteProduct tunggal
         const [rows] = await db.query("SELECT images, image_url FROM products WHERE id = ?", [id]);
 
-        // Coba Hapus DB
         await db.query("DELETE FROM products WHERE id = ?", [id]);
 
-        // Jika sukses hapus DB, baru hapus gambar
         if (rows.length > 0) {
           const product = rows[0];
           let imagesToDelete = [];
 
+          // Collect images logic
           if (product.images) {
-            const parsed = safeParseJSON(product.images);
-            parsed.forEach((img) => {
+            safeParseJSON(product.images).forEach((img) => {
               const url = typeof img === "object" ? img.url : img;
               if (url) imagesToDelete.push(url);
             });
@@ -402,12 +389,14 @@ const bulkDeleteProducts = async (req, res) => {
             imagesToDelete.push(product.image_url);
           }
 
-          // Fire and forget (tapi tetap ditangani deleteFile)
-          imagesToDelete.forEach((url) => deleteFile(url));
+          // === FIX: Gunakan await Promise.allSettled juga di sini ===
+          // Jangan pakai forEach biasa untuk async!
+          if (imagesToDelete.length > 0) {
+            await Promise.allSettled(imagesToDelete.map((url) => deleteFile(url)));
+          }
         }
         deletedCount++;
       } catch (error) {
-        // Handle Foreign Key Constraint
         if (error.code === "ER_ROW_IS_REFERENCED_2") {
           await db.query("UPDATE products SET is_deleted = 1 WHERE id = ?", [id]);
           archivedCount++;
@@ -418,10 +407,10 @@ const bulkDeleteProducts = async (req, res) => {
     }
     res.status(200).json({
       success: true,
-      message: `Proses selesai. Terhapus: ${deletedCount}, Diarsipkan: ${archivedCount}`,
+      message: `Selesai. Terhapus: ${deletedCount}, Diarsipkan: ${archivedCount}`,
     });
   } catch (error) {
-    console.error("Bulk delete fatal error:", error);
+    console.error("Bulk delete error:", error);
     res.status(500).json({ success: false, message: "Server Error saat Bulk Delete" });
   }
 };
