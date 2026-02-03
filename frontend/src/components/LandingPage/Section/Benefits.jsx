@@ -1,21 +1,28 @@
-import { Printer, Infinity as InfinityIcon, PenTool } from "lucide-react";
+import { CheckCircle2, Star, Zap, Image } from "lucide-react";
 
 export const Benefits = () => {
-  const items = [
+  const benefits = [
     {
-      icon: <InfinityIcon size={32} />,
-      title: "Sekali Beli, Print Selamanya",
-      desc: "File digital jadi milikmu selamanya. Mau print 1 kali atau 100 kali? Bebas! Hemat kertas, hemat biaya.",
+      title: "Desain Orisinil & Unik",
+      description: "Setiap goresan dibuat manual (hand-drawn), memberikan sentuhan personal yang tidak pasaran.",
+      icon: <Star className="text-[#FDFCF8]" size={24} />,
     },
     {
-      icon: <Printer size={32} />,
-      title: "Format A4 + File Satuan",
-      desc: "Dapat layout siap cetak ukuran A4 (anti ribet setting margin) DAN file PNG satuan transparan untuk digital.",
+      title: "Kualitas HD & Tajam",
+      description:
+        "File asli beresolusi tinggi (300 DPI). Gambar tetap jernih dan tidak pecah meski kamu zoom maksimal.",
+      icon: <Image className="text-[#FDFCF8]" size={24} />, // Ikon diganti jadi Image biar relevan
     },
     {
-      icon: <PenTool size={32} />,
-      title: "Original Hand-Drawn",
-      desc: "Murni coretan tangan sendiri, bukan hasil generate AI. Punya karakter unik yang nggak pasaran.",
+      title: "Format Fleksibel",
+      description:
+        "Bukan hanya untuk GoodNotes! Kamu dapat file PNG transparan yang bisa dipakai di mana saja (Notion, Instagram, dll).",
+      icon: <CheckCircle2 className="text-[#FDFCF8]" size={24} />,
+    },
+    {
+      title: "Akses Seumur Hidup",
+      description: "Sekali bayar, milikmu selamanya. File tersimpan aman di Cloud dan bisa diunduh kapan saja.",
+      icon: <Zap className="text-[#FDFCF8]" size={24} />,
     },
   ];
 
@@ -30,16 +37,18 @@ export const Benefits = () => {
         </h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {items.map((item, idx) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {benefits.map((item, idx) => (
           <div
             key={idx}
-            className="bg-[#FDFCF8] p-8 rounded-2xl border-2 border-[#E5E0D8] hover:border-[#8DA399] transition-all duration-300 relative group shadow-sm hover:shadow-[8px_8px_0px_0px_rgba(141,163,153,0.3)]">
-            <div className="bg-[#EAE7DF] w-16 h-16 rounded-full flex items-center justify-center text-[#3E362E] mb-6 group-hover:bg-[#8DA399] group-hover:text-white transition-colors border border-[#E5E0D8]">
+            className="group bg-[#FDFCF8] p-8 rounded-3xl border-2 border-[#E5E0D8] hover:border-[#8DA399] transition-all duration-300 hover:-translate-y-2 shadow-[4px_4px_0px_0px_rgba(62,54,46,0.05)] hover:shadow-[8px_8px_0px_0px_rgba(141,163,153,0.2)]">
+            <div className="w-14 h-14 bg-[#3E362E] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg">
               {item.icon}
             </div>
-            <h3 className="text-xl font-bold mb-3 text-[#3E362E]">{item.title}</h3>
-            <p className="text-[#6B5E51] leading-relaxed text-sm">{item.desc}</p>
+            <h3 className="text-xl font-bold text-[#3E362E] mb-3 group-hover:text-[#8DA399] transition-colors">
+              {item.title}
+            </h3>
+            <p className="text-[#6B5E51] leading-relaxed text-sm font-medium">{item.description}</p>
           </div>
         ))}
       </div>

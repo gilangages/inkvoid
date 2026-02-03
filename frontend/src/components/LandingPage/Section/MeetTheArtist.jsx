@@ -2,7 +2,7 @@ import { Heart, Sparkles, Quote } from "lucide-react";
 
 export const MeetTheArtist = () => {
   return (
-    <section className="py-24 px-6 max-w-6xl mx-auto relative">
+    <section id="creator" className="py-24 px-6 max-w-6xl mx-auto relative">
       {/* Container Utama dengan efek kaca buram (Glassmorphism) yang halus */}
       <div className="bg-white/60 backdrop-blur-sm rounded-[3rem] p-8 md:p-14 border border-[#E5E0D8] shadow-[0px_10px_40px_-10px_rgba(62,54,46,0.05)] flex flex-col md:flex-row items-center gap-12 md:gap-20 relative overflow-hidden">
         {/* Dekorasi Background Halus */}
