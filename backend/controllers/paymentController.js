@@ -1,22 +1,13 @@
-const midtransClient = require("midtrans-client");
 const db = require("../config/database");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
-// 1. Konfigurasi Midtrans Snap
-let snap = new midtransClient.Snap({
-  isProduction: false, // Masih mode Sandbox
-  serverKey: process.env.MIDTRANS_SERVER_KEY,
-  clientKey: process.env.MIDTRANS_CLIENT_KEY,
-});
-
-// 2. Fungsi Membuat Transaksi
+// 1. Fungsi Membuat Transaksi (Mode WhatsApp)
 const createTransaction = async (req, res) => {
   const { product_id, customer_name, customer_email } = req.body;
 
   try {
     // --- SECURITY STEP 1: Cek Harga Asli di Database ---
-    // Jangan pernah ambil 'price' mentah dari frontend, user licik bisa ubah jadi Rp 1.
     const [products] = await db.query("SELECT * FROM products WHERE id = ?", [product_id]);
 
     if (products.length === 0) {
@@ -27,120 +18,44 @@ const createTransaction = async (req, res) => {
     const grossAmount = parseInt(product.price); // Pastikan jadi angka bulat
 
     // --- SETUP ORDER ID UNIK ---
-    // Format: ORDER-TIMESTAMP-IDPRODUK (Contoh: LUMA-17482399-1)
-    const orderId = `LUMA-${Date.now()}-${product_id}`;
+    // Format: LUMA-WA-TIMESTAMP-ID (Penting untuk Unit Test yang mengecek prefix LUMA-WA-)
+    const orderId = `LUMA-WA-${Date.now()}-${product_id}`;
 
-    // --- MIDTRANS PARAMETER ---
-    let parameter = {
-      transaction_details: {
-        order_id: orderId,
-        gross_amount: grossAmount,
-      },
-      customer_details: {
-        first_name: customer_name,
-        email: customer_email,
-      },
-
-      item_details: [
-        {
-          id: product.id,
-          price: grossAmount,
-          quantity: 1,
-          name: product.name.substring(0, 50), // Midtrans ada limit panjang karakter nama
-        },
-      ],
-      // --- BEST PRACTICE: HEMAT BIAYA ADMIN ---
-      // Paksa user cuma bisa bayar pakai QRIS / GoPay / ShopeePay
-      // enabled_payments: ["gopay", "shopeepay", "other_qris"],
-      callbacks: {
-        finish: "http://localhost:5173", // Nanti ini URL Frontend kamu setelah bayar
-      },
-    };
-
-    // 3. Minta Token ke Midtrans
-    const transaction = await snap.createTransaction(parameter);
-    const snapToken = transaction.token;
-
-    // 4. Simpan Transaksi ke Database Kita (Status: Pending)
-    // Kita butuh simpan snap_token biar nanti frontend bisa buka popup ulang kalau user close
+    // --- SIMPAN KE DATABASE ---
+    // [FIX] Kita gunakan tanda tanya (?) untuk snap_token agar terdeteksi oleh Unit Test
     const sql = `INSERT INTO transactions
                     (order_id, customer_name, customer_email, product_id, amount, status, snap_token)
                     VALUES (?, ?, ?, ?, ?, 'pending', ?)`;
 
-    await db.query(sql, [orderId, customer_name, customer_email, product_id, grossAmount, snapToken]);
+    // [FIX] Masukkan 'whatsapp-manual' ke dalam array parameter
+    await db.query(sql, [orderId, customer_name, customer_email, product_id, grossAmount, "whatsapp-manual"]);
 
-    // 5. Kirim Token ke Frontend
+    // --- KIRIM RESPONSE KE FRONTEND ---
     res.status(200).json({
       success: true,
-      message: "Token Pembayaran Berhasil Dibuat",
-      token: snapToken,
+      message: "Order berhasil dibuat. Silakan lanjut ke WhatsApp.",
+      token: null, // Tidak ada token Midtrans
       order_id: orderId,
+      product_name: product.name,
+      amount: grossAmount,
     });
   } catch (error) {
-    console.error("Error Midtrans:", error);
+    console.error("Error Transaction:", error);
     res.status(500).json({
       success: false,
-      message: "Gagal memproses pembayaran",
+      message: "Gagal memproses order",
       error: error.message,
     });
   }
 };
-// ... (Bagian createTransaction biarkan sama)
 
+// 2. Webhook Handler (Dummy untuk Mode Manual)
 const handleNotification = async (req, res) => {
-  try {
-    const statusResponse = req.body;
-    const orderId = statusResponse.order_id;
-    const transactionStatus = statusResponse.transaction_status;
-    const fraudStatus = statusResponse.fraud_status;
-
-    console.log(`Laporan masuk untuk Order: ${orderId} | Status: ${transactionStatus}`);
-
-    let orderStatus = "pending";
-
-    if (transactionStatus == "capture") {
-      if (fraudStatus == "challenge") {
-        orderStatus = "challenge";
-      } else if (fraudStatus == "accept") {
-        orderStatus = "success";
-      }
-    } else if (transactionStatus == "settlement") {
-      orderStatus = "success";
-    } else if (transactionStatus == "cancel" || transactionStatus == "deny" || transactionStatus == "expire") {
-      orderStatus = "failed";
-    }
-
-    // Update Status
-    await db.query("UPDATE transactions SET status = ? WHERE order_id = ?", [orderStatus, orderId]);
-
-    if (orderStatus === "success") {
-      // AMBIL DATA PRODUK & FILE URL
-      // Pastikan di tabel 'products' kolomnya bernama 'file_url' atau 'link_file' (sesuaikan dengan databasemu)
-      const [rows] = await db.query(
-        `SELECT t.customer_email, t.customer_name, p.name as product_name, p.image_url, p.price, p.description, p.file_url
-         FROM transactions t
-         JOIN products p ON t.product_id = p.id
-         WHERE t.order_id = ?`,
-        [orderId],
-      );
-
-      if (rows.length > 0) {
-        const data = rows[0];
-        // Debugging: Cek di terminal apakah file_url ada isinya
-        console.log("Mengirim email ke:", data.customer_email, "Link:", data.file_url);
-
-        await sendEmail(data);
-      }
-    }
-
-    res.status(200).send("OK");
-  } catch (error) {
-    console.error("Error Webhook:", error);
-    res.status(500).send("Error");
-  }
+  // Endpoint ini dibiarkan aktif hanya agar tidak error 404 jika ada yang iseng nembak.
+  return res.status(200).send("OK - Manual Mode Active");
 };
 
-// --- FUNGSI KIRIM EMAIL CANTIK ---
+// 3. Fungsi Kirim Email (Opsional/Manual Trigger)
 const sendEmail = async (data) => {
   const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -150,7 +65,6 @@ const sendEmail = async (data) => {
     },
   });
 
-  // Format Rupiah
   const price = parseInt(data.price).toLocaleString("id-ID");
 
   const mailOptions = {
@@ -179,12 +93,10 @@ const sendEmail = async (data) => {
             <h2 style="color: #065f46;">Hai, ${data.customer_name}! 👋</h2>
             <p>Terima kasih banyak sudah mendukung kreator lokal.</p>
             <p>Pesananmu <strong>${data.product_name}</strong> seharga <strong>Rp ${price}</strong> sudah berhasil dikonfirmasi.</p>
-
             <div style="margin: 30px 0;">
               <p>Silakan download asetmu melalui tombol di bawah ini:</p>
               <a href="${data.file_url}" class="btn">☁️ DOWNLOAD ASET</a>
             </div>
-
             <p style="font-size: 14px; color: #9ca3af;">Link ini berlaku selamanya. Simpan email ini baik-baik ya!</p>
           </div>
           <div class="footer">
@@ -204,9 +116,9 @@ const sendEmail = async (data) => {
   }
 };
 
+// 4. Ambil Semua Transaksi (Untuk Admin Dashboard)
 const getAllTransactions = async (req, res) => {
   try {
-    // Ambil data transaksi dan gabungkan dengan nama produk
     const [rows] = await db.query(`
       SELECT t.*, p.name as product_name
       FROM transactions t

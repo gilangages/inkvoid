@@ -48,7 +48,7 @@ export default function AdminLogin() {
               onChange={(e) => setEmail(e.target.value)}
               // text-base: Mencegah auto-zoom di iOS saat input diklik
               className="w-full bg-[#fdfcf8] border-2 border-[#e5e0d8] rounded-lg p-3 text-sm sm:text-base focus:border-[#8da399] focus:outline-none transition-colors"
-              placeholder="budi@gmail.com"
+              placeholder="Masukkan email"
             />
           </div>
           <div>
@@ -58,7 +58,7 @@ export default function AdminLogin() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-[#fdfcf8] border-2 border-[#e5e0d8] rounded-lg p-3 text-sm sm:text-base focus:border-[#8da399] focus:outline-none transition-colors"
-              placeholder="••••••••"
+              placeholder="Masukkan password"
             />
           </div>
 
