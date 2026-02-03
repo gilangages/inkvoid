@@ -88,7 +88,8 @@ const createProduct = async (req, res) => {
 
     // Map files ke struktur object baru
     const imageObjects = req.files.map((file, index) => ({
-      url: `${protocol}://${host}/uploads/${file.filename}`,
+      // Jika di Cloudinary, URL ada di file.path. Jika lokal/test, gunakan path yang tersedia
+      url: file.path || (file.filename ? `${protocol}://${host}/uploads/${file.filename}` : "mock-url.jpg"),
       label: labels[index] || file.originalname.split(".")[0],
       order: index,
     }));
@@ -200,7 +201,7 @@ const updateProduct = async (req, res) => {
               newFileIndex++; // Geser pointer ke file berikutnya
 
               return {
-                url: `${protocol}://${host}/uploads/${file.filename}`,
+                url: file.path, // Ambil langsung dari Cloudinary
                 // Pakai label dari input user, atau fallback ke nama asli file
                 label: item.label || file.originalname.split(".")[0],
                 order: item.order,
