@@ -45,6 +45,17 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use("/api/admin", authRoutes);
 app.use(express.urlencoded({ extended: true })); // <--- Tambahkan ini untuk form-data
 
+// === API HEALTH CHECK (Untuk UptimeRobot) ===
+// Best Practice: Return status 200 OK dengan payload JSON ringan
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Server is healthy",
+    uptime: process.uptime(), // Info durasi server nyala (detik)
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Test Route
 app.get("/", (req, res) => {
   res.send("Server Luma (MySQL Version) is Running! 🚀");

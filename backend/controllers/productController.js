@@ -24,38 +24,59 @@ const getBaseUrl = (req) => {
   return `${protocol}://${host}`;
 };
 
-// === HELPER: Hapus File (Support Local Path & Cloudinary) ===
+// === HELPER UTAMA: Ekstrak Public ID Cloudinary dengan Regex ===
+// Ini jauh lebih aman daripada split string manual
+const getCloudinaryPublicId = (url) => {
+  try {
+    // Regex untuk menangkap teks setelah '/upload/' (dan versi v123..) sampai sebelum extension
+    // Contoh: .../upload/v12345/lumastore_products/sepatu.jpg -> lumastore_products/sepatu
+    const regex = /\/upload\/(?:v\d+\/)?(.+)\.[^.]+$/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+  } catch (error) {
+    console.error("Gagal ekstrak public ID:", error);
+    return null;
+  }
+};
+
+// === HELPER: Hapus File (Updated untuk Robustness) ===
 const deleteFile = async (fileUrl) => {
   if (!fileUrl) return;
 
   try {
     // A. Jika file Cloudinary
     if (fileUrl.includes("cloudinary.com")) {
-      const splitUrl = fileUrl.split("/");
-      const filenameWithExt = splitUrl.pop();
-      const folder = splitUrl.pop();
-      const publicId = `${folder}/${filenameWithExt.split(".")[0]}`;
-      await cloudinary.uploader.destroy(publicId);
-      console.log(`[Cloudinary] Deleted: ${publicId}`);
+      const publicId = getCloudinaryPublicId(fileUrl);
+      if (publicId) {
+        // await di sini penting agar kita yakin Cloudinary menerima request hapus
+        await cloudinary.uploader.destroy(publicId);
+        console.log(`[Cloudinary] Deleted: ${publicId}`);
+      } else {
+        console.warn(`[Cloudinary] Skip delete, public ID not found for: ${fileUrl}`);
+      }
     }
     // B. Jika file Local
     else {
-      // Logic baru: Handle path relatif "/uploads/..." atau full url lama
       let filename;
       if (fileUrl.startsWith("http")) {
-        filename = fileUrl.split("/").pop(); // Ambil nama file dari full URL lama
+        filename = fileUrl.split("/").pop();
       } else {
-        filename = path.basename(fileUrl); // Ambil nama file dari path relatif
+        filename = path.basename(fileUrl);
       }
 
-      const filePath = path.join(__dirname, "../public/uploads", filename);
+      // Sanitasi path untuk mencegah traversal directory (Security Best Practice)
+      const safeFilename = path.basename(filename);
+      const filePath = path.join(__dirname, "../public/uploads", safeFilename);
+
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
         console.log(`[Local] Deleted: ${filePath}`);
       }
     }
   } catch (error) {
-    console.error("Gagal menghapus file:", error.message);
+    // Kita gunakan console.error tapi TIDAK melempar error ulang (throw)
+    // Agar jika 1 gambar gagal dihapus, proses hapus data produk di DB tetap jalan.
+    console.error(`Gagal menghapus file fisik (${fileUrl}):`, error.message);
   }
 };
 
@@ -206,32 +227,65 @@ const createProduct = async (req, res) => {
   }
 };
 
-// 3. Delete Product
+// 3. Delete Product (revisi)
 const deleteProduct = async (req, res) => {
   const { id } = req.params;
   try {
+    // 1. Ambil data gambar SEBELUM menghapus record database
     const [existing] = await db.query("SELECT images, image_url FROM products WHERE id = ?", [id]);
-    if (existing.length === 0) return res.status(404).json({ success: false, message: "Produk tidak ditemukan" });
 
-    await db.query("DELETE FROM products WHERE id = ?", [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ success: false, message: "Produk tidak ditemukan" });
+    }
 
     const product = existing[0];
+
+    // 2. Kumpulkan SEMUA URL gambar yang perlu dihapus
     let imagesToDelete = [];
+
+    // Parse kolom 'images' (JSON Array)
     if (product.images) {
       const parsed = safeParseJSON(product.images);
-      parsed.forEach((img) => imagesToDelete.push(img.url || img));
+      // Handle jika formatnya object {url: ...} atau string langsung
+      parsed.forEach((img) => {
+        const url = typeof img === "object" ? img.url : img;
+        if (url) imagesToDelete.push(url);
+      });
     }
+
+    // Tambahkan 'image_url' (Main Image legacy) jika belum ada di list
     if (product.image_url && !imagesToDelete.includes(product.image_url)) {
       imagesToDelete.push(product.image_url);
     }
 
-    imagesToDelete.forEach((url) => deleteFile(url));
-    res.status(200).json({ success: true, message: "Produk berhasil dihapus!" });
-  } catch (error) {
-    if (error.code === "ER_ROW_IS_REFERENCED_2") {
-      await db.query("UPDATE products SET is_deleted = 1 WHERE id = ?", [id]);
-      return res.status(200).json({ success: true, message: "Produk diarsipkan." });
+    // 3. Hapus Record Database Terlebih Dahulu
+    // Kenapa? Agar user segera melihat produk hilang.
+    // File cleanup bisa berjalan secara asynchronous (Promise.all)
+    await db.query("DELETE FROM products WHERE id = ?", [id]);
+
+    // 4. Eksekusi Hapus File (Paralel agar cepat)
+    if (imagesToDelete.length > 0) {
+      // Menggunakan Promise.allSettled agar jika satu gagal, yang lain tetap dieksekusi
+      Promise.allSettled(imagesToDelete.map((url) => deleteFile(url))).then((results) => {
+        // Opsional: Log hasil penghapusan
+        console.log("Cleanup images completed.");
+      });
     }
+
+    res.status(200).json({ success: true, message: "Produk dan semua gambar berhasil dihapus!" });
+  } catch (error) {
+    console.error("Error deleteProduct:", error);
+
+    // Fallback: Jika gagal delete karena constraint (Foreign Key order), arsipkan
+    if (error.code === "ER_ROW_IS_REFERENCED_2") {
+      try {
+        await db.query("UPDATE products SET is_deleted = 1 WHERE id = ?", [id]);
+        return res.status(200).json({ success: true, message: "Produk diarsipkan (karena ada riwayat order)." });
+      } catch (archiveError) {
+        return res.status(500).json({ success: false, message: "Gagal mengarsipkan produk." });
+      }
+    }
+
     res.status(500).json({ success: false, message: "Gagal hapus produk" });
   }
 };
@@ -313,12 +367,12 @@ const updateProduct = async (req, res) => {
   }
 };
 
-// 5. Bulk Delete (Sama seperti sebelumnya, logic deleteFile sudah menghandle)
+// 5. Bulk Delete (updated)
 const bulkDeleteProducts = async (req, res) => {
-  // ... Copy logic bulk delete lama kamu, tidak perlu ubah banyak karena deleteFile sudah pintar ...
-  // Cukup pastikan import bulkDeleteProducts di module.exports
   const { ids } = req.body;
-  if (!ids || ids.length === 0) return res.status(400).json({ success: false, message: "Tidak ada ID" });
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ success: false, message: "Tidak ada ID yang dikirim" });
+  }
 
   let deletedCount = 0;
   let archivedCount = 0;
@@ -326,23 +380,49 @@ const bulkDeleteProducts = async (req, res) => {
   try {
     for (const id of ids) {
       try {
-        const [rows] = await db.query("SELECT images FROM products WHERE id = ?", [id]);
+        // Logika sama persis dengan deleteProduct tunggal
+        const [rows] = await db.query("SELECT images, image_url FROM products WHERE id = ?", [id]);
+
+        // Coba Hapus DB
         await db.query("DELETE FROM products WHERE id = ?", [id]);
+
+        // Jika sukses hapus DB, baru hapus gambar
         if (rows.length > 0) {
-          const imgs = safeParseJSON(rows[0].images, []);
-          imgs.forEach((img) => deleteFile(img.url || img));
+          const product = rows[0];
+          let imagesToDelete = [];
+
+          if (product.images) {
+            const parsed = safeParseJSON(product.images);
+            parsed.forEach((img) => {
+              const url = typeof img === "object" ? img.url : img;
+              if (url) imagesToDelete.push(url);
+            });
+          }
+          if (product.image_url && !imagesToDelete.includes(product.image_url)) {
+            imagesToDelete.push(product.image_url);
+          }
+
+          // Fire and forget (tapi tetap ditangani deleteFile)
+          imagesToDelete.forEach((url) => deleteFile(url));
         }
         deletedCount++;
       } catch (error) {
+        // Handle Foreign Key Constraint
         if (error.code === "ER_ROW_IS_REFERENCED_2") {
           await db.query("UPDATE products SET is_deleted = 1 WHERE id = ?", [id]);
           archivedCount++;
+        } else {
+          console.error(`Gagal delete ID ${id}:`, error.message);
         }
       }
     }
-    res.status(200).json({ success: true, message: `Sukses: ${deletedCount} hapus, ${archivedCount} arsip` });
+    res.status(200).json({
+      success: true,
+      message: `Proses selesai. Terhapus: ${deletedCount}, Diarsipkan: ${archivedCount}`,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server Error" });
+    console.error("Bulk delete fatal error:", error);
+    res.status(500).json({ success: false, message: "Server Error saat Bulk Delete" });
   }
 };
 
