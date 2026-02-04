@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
-import { useLocation, useNavigate } from "react-router"; // Import Hooks
+import { useLocation, useNavigate } from "react-router";
 
 export const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const location = useLocation(); // Cek kita lagi di halaman mana
-  const navigate = useNavigate(); // Alat buat pindah halaman
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -17,19 +17,14 @@ export const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // LOGIKA BARU NAVIGASI
   const handleNavigation = (id) => {
-    setIsMobileMenuOpen(false); // Tutup menu mobile dulu
+    setIsMobileMenuOpen(false);
 
     if (location.pathname === "/") {
-      // Jika di Home, langsung scroll
       const element = document.getElementById(id);
       if (element) element.scrollIntoView({ behavior: "smooth" });
     } else {
-      // Jika BUKAN di Home (misal di Terms), pindah ke Home dulu
       navigate("/");
-
-      // Tunggu sebentar sampai halaman Home loading, baru scroll
       setTimeout(() => {
         const element = document.getElementById(id);
         if (element) element.scrollIntoView({ behavior: "smooth" });
@@ -57,7 +52,7 @@ export const Navbar = () => {
           <img
             onContextMenu={(e) => e.preventDefault()}
             onDragStart={(e) => e.preventDefault()}
-            src="./luma-sticker.png" // Pastikan path ini benar di semua halaman (atau gunakan import)
+            src="./luma-sticker.png"
             alt=""
             className="h-12 w-auto"
           />
@@ -67,17 +62,31 @@ export const Navbar = () => {
         </div>
 
         {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-6">
           <button
             onClick={() => handleNavigation("products")}
             className="text-[#6B5E51] font-bold hover:text-[#3E362E] transition">
             Koleksi
           </button>
           <button
+            onClick={() => handleNavigation("howto")}
+            className="text-[#6B5E51] font-bold hover:text-[#3E362E] transition">
+            Cara Order
+          </button>
+
+          {/* MENU BARU: KREATOR */}
+          <button
+            onClick={() => handleNavigation("creator")}
+            className="text-[#6B5E51] font-bold hover:text-[#3E362E] transition">
+            Kreator
+          </button>
+
+          <button
             onClick={() => handleNavigation("benefits")}
             className="text-[#6B5E51] font-bold hover:text-[#3E362E] transition">
-            Kenapa Beli?
+            Keunggulan
           </button>
+
           <button
             onClick={() => handleNavigation("faq")}
             className="text-[#6B5E51] font-bold hover:text-[#3E362E] transition">
@@ -105,9 +114,22 @@ export const Navbar = () => {
             Koleksi
           </button>
           <button
+            onClick={() => handleNavigation("howto")}
+            className="text-left text-[#3E362E] font-bold py-2 border-b border-dashed border-[#E5E0D8]">
+            Cara Order
+          </button>
+
+          {/* MENU BARU MOBILE */}
+          <button
+            onClick={() => handleNavigation("creator")}
+            className="text-left text-[#3E362E] font-bold py-2 border-b border-dashed border-[#E5E0D8]">
+            Kreator
+          </button>
+
+          <button
             onClick={() => handleNavigation("benefits")}
             className="text-left text-[#3E362E] font-bold py-2 border-b border-dashed border-[#E5E0D8]">
-            Kenapa Beli?
+            Keunggulan
           </button>
           <button
             onClick={() => handleNavigation("faq")}
