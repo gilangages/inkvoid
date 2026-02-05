@@ -22,10 +22,17 @@ const getAllProducts = async (req, res) => {
   }
 };
 
-// -- Bagian Create Product --
+const safeParseJSON = (jsonString, fallback = []) => {
+  try {
+    return JSON.parse(jsonString);
+  } catch (e) {
+    return fallback;
+  }
+};
+
 const createProduct = async (req, res) => {
   try {
-    const { name, price, description, file_url, image_labels } = req.body; // Terima image_labels (string JSON)
+    const { name, price, description, file_url, image_labels } = req.body;
 
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ success: false, message: "Minimal upload 1 gambar produk!" });
@@ -33,16 +40,22 @@ const createProduct = async (req, res) => {
 
     const protocol = req.protocol;
     const host = req.get("host");
-    const parsedLabels = image_labels ? JSON.parse(image_labels) : [];
 
-    // Map file yang diupload ke format Object dengan Label dan Order
+    // Parse labels yang dikirim dari frontend (Array of Strings)
+    const labels = safeParseJSON(image_labels);
+
+    // Map files ke struktur baru
+    // Index array otomatis menjadi urutan (order)
     const imageObjects = req.files.map((file, index) => ({
       url: `${protocol}://${host}/uploads/${file.filename}`,
-      label: parsedLabels[index] || "", // Ambil label sesuai index file
+      label: labels[index] || "", // Label sesuai index, default kosong
       order: index,
     }));
 
+    // Gambar utama adalah index ke-0
     const mainImage = imageObjects[0].url;
+
+    // Simpan array object ke database sebagai JSON string
     const imagesJson = JSON.stringify(imageObjects);
 
     const query =
@@ -51,10 +64,12 @@ const createProduct = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      data: { id: result.insertId, images: imageObjects },
+      message: "Produk berhasil ditambahkan",
+      data: { id: result.insertId },
     });
   } catch (error) {
-    // ... logic error existing
+    console.error("Error createProduct:", error);
+    res.status(500).json({ success: false, message: "Gagal menambahkan produk" });
   }
 };
 

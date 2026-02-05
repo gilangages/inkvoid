@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Plus, Save, X, UploadCloud } from "lucide-react";
+import { Save, X, UploadCloud } from "lucide-react"; // Hapus import yang tidak terpakai
 import { createProduct } from "../../../lib/api/ProductApi";
 import { useLocalStorage } from "react-use";
 import { alertError, alertSuccess } from "../../../lib/alert";
 import { useNavigate } from "react-router";
-import { createPortal } from "react-dom"; // Tambahkan untuk Lightbox
+import { createPortal } from "react-dom";
 import TextAreaAutosize from "react-textarea-autosize";
 
 export default function ProductForm() {
@@ -19,34 +19,65 @@ export default function ProductForm() {
 
   // State untuk Preview Full Gambar (Lightbox)
   const [previewUrl, setPreviewUrl] = useState(null);
-  //label img
-  const [imageLabels, setImageLabels] = useState({});
 
-  const moveImage = (index, direction) => {
-    const newFiles = [...files];
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= newFiles.length) return;
-
-    [newFiles[index], newFiles[targetIndex]] = [newFiles[targetIndex], newFiles[index]];
-    setFiles(newFiles);
-  };
+  // State Label (Key: index, Value: string)
+  const [labels, setLabels] = useState({});
 
   const handleFileChange = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files);
-      setFiles((prevFiles) => [...prevFiles, ...newFiles]);
-    }
-    e.target.value = "";
+    const selectedFiles = Array.from(e.target.files);
+    setFiles((prev) => [...prev, ...selectedFiles]);
   };
 
-  const removeFile = (index) => {
-    setFiles(files.filter((_, i) => i !== index));
+  // Handle Label Change
+  const handleLabelChange = (index, value) => {
+    setLabels((prev) => ({ ...prev, [index]: value }));
+  };
+
+  // Handle Pindah Urutan (Reorder)
+  const moveImage = (index, direction) => {
+    const newFiles = [...files];
+    const newLabels = { ...labels }; // Copy object labels
+
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+
+    // Validasi batas array
+    if (targetIndex < 0 || targetIndex >= newFiles.length) return;
+
+    // 1. Swap File
+    [newFiles[index], newFiles[targetIndex]] = [newFiles[targetIndex], newFiles[index]];
+
+    // 2. Swap Label (Ikuti perpindahan file)
+    const labelCurrent = newLabels[index] || "";
+    const labelTarget = newLabels[targetIndex] || "";
+
+    newLabels[index] = labelTarget;
+    newLabels[targetIndex] = labelCurrent;
+
+    setFiles(newFiles);
+    setLabels(newLabels);
+  };
+
+  // Handle Hapus Gambar
+  const removeImage = (index) => {
+    const newFiles = files.filter((_, i) => i !== index);
+
+    // Re-index labels agar urutan tidak berantakan setelah dihapus
+    const newLabels = {};
+    let newIdx = 0;
+    for (let i = 0; i < files.length; i++) {
+      if (i !== index) {
+        newLabels[newIdx] = labels[i] || "";
+        newIdx++;
+      }
+    }
+
+    setFiles(newFiles);
+    setLabels(newLabels);
   };
 
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // Validasi minimal 1 gambar
     if (files.length === 0) {
       alertError("Minimal pilih 1 gambar produk!");
       return;
@@ -60,12 +91,15 @@ export default function ProductForm() {
       formData.append("price", price);
       formData.append("description", description);
 
-      const labelsArray = files.map((_, idx) => imageLabels[idx] || "");
-      formData.append("image_labels", JSON.stringify(labelsArray));
+      // Append Images
+      files.forEach((file) => {
+        formData.append("images", file);
+      });
 
-      for (let i = 0; i < files.length; i++) {
-        formData.append("images", files[i]);
-      }
+      // Append Labels (Urutkan sesuai index files)
+      // Kita map files, bukan labels, untuk memastikan urutan sinkron
+      const labelsArray = files.map((_, idx) => labels[idx] || "");
+      formData.append("image_labels", JSON.stringify(labelsArray));
 
       const response = await createProduct(token, formData);
       const responseBody = await response.json();
@@ -106,7 +140,7 @@ export default function ProductForm() {
               />
             </div>
 
-            {/* Harga - Full Width agar konsisten */}
+            {/* Harga */}
             <div>
               <label className="text-sm font-bold text-[#3e362e]">Harga (Rp)</label>
               <input
@@ -135,52 +169,65 @@ export default function ProductForm() {
 
           {/* Upload Area */}
           <div>
-            <label className="text-sm font-bold text-[#3e362e] mb-3 block">Galeri Foto Produk</label>
+            <label className="text-sm font-bold text-[#3e362e] mb-3 block">Galeri Foto Produk & Label</label>
 
             {/* Preview List Gambar */}
             {files.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 animate-fade-in">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4 animate-fade-in">
                 {files.map((file, idx) => {
                   const url = URL.createObjectURL(file);
                   return (
                     <div
                       key={idx}
-                      className="relative aspect-square rounded-xl overflow-hidden border-2 border-[#8da399] shadow-sm group">
-                      <img
-                        src={url}
-                        alt="preview"
-                        className="w-full h-full object-cover cursor-zoom-in hover:scale-105 transition duration-500"
-                        onClick={() => setPreviewUrl(url)}
-                      />
-
-                      <input
-                        placeholder="Nama Foto (Contoh: Sisi Kiri)"
-                        className="w-full text-xs mt-2 border p-1 rounded"
-                        onChange={(e) => setImageLabels({ ...imageLabels, [idx]: e.target.value })}
-                      />
-                      <div className="flex gap-1 mt-1 justify-center">
-                        <button
-                          type="button"
-                          onClick={() => moveImage(idx, "up")}
-                          className="p-1 bg-gray-100 rounded text-[10px]">
-                          ⬆️
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moveImage(idx, "down")}
-                          className="p-1 bg-gray-100 rounded text-[10px]">
-                          ⬇️
-                        </button>
+                      className="relative bg-gray-50 rounded-xl overflow-hidden border-2 border-[#8da399] shadow-sm flex flex-col">
+                      {/* Gambar */}
+                      <div
+                        className="relative aspect-square cursor-zoom-in overflow-hidden"
+                        onClick={() => setPreviewUrl(url)}>
+                        <img
+                          src={url}
+                          alt="preview"
+                          className="w-full h-full object-cover hover:scale-105 transition duration-500"
+                        />
+                        <div className="absolute top-0 right-0 bg-[#3e362e] text-white text-[10px] px-2 py-0.5 rounded-bl-lg">
+                          #{idx + 1}
+                        </div>
                       </div>
-                      {/* Tombol Hapus - Style disamakan (Selalu muncul di HP) */}
-                      <button
-                        type="button"
-                        onClick={() => removeFile(idx)}
-                        className="absolute top-1.5 right-1.5 bg-[#3e362e]/80 backdrop-blur text-white p-1.5 rounded-full shadow-md hover:bg-red-500 transition-colors">
-                        <X size={14} />
-                      </button>
-                      <div className="absolute bottom-0 w-full bg-black/40 backdrop-blur-[2px] py-1 px-2">
-                        <p className="text-[10px] text-white truncate">{file.name}</p>
+
+                      {/* Input Label & Controls */}
+                      <div className="p-2 bg-white flex flex-col gap-2">
+                        <input
+                          placeholder="Label (Ex: Tampak Depan)"
+                          className="w-full text-xs border border-gray-300 p-1.5 rounded focus:border-[#8da399] outline-none"
+                          value={labels[idx] || ""}
+                          onChange={(e) => handleLabelChange(idx, e.target.value)}
+                        />
+
+                        <div className="flex justify-between items-center">
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              onClick={() => moveImage(idx, "up")}
+                              disabled={idx === 0}
+                              className="p-1 bg-gray-100 rounded text-[10px] hover:bg-gray-200 disabled:opacity-30">
+                              ⬆️
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveImage(idx, "down")}
+                              disabled={idx === files.length - 1}
+                              className="p-1 bg-gray-100 rounded text-[10px] hover:bg-gray-200 disabled:opacity-30">
+                              ⬇️
+                            </button>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => removeImage(idx)}
+                            className="text-red-500 hover:bg-red-50 p-1 rounded transition-colors">
+                            <X size={16} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );

@@ -1,4 +1,4 @@
-import { X, Lock, ChevronLeft, ChevronRight, Image as ImageIcon, ZoomIn, Info, Mail, Check } from "lucide-react";
+import { X, Lock, ChevronLeft, ChevronRight, Image as ImageIcon, Mail, Check } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
 
@@ -7,15 +7,35 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
   const [email, setEmail] = useState("");
   const [currentImgIdx, setCurrentImgIdx] = useState(0);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
-
-  // STATE BARU: Default false (belum setuju)
   const [isAgreed, setIsAgreed] = useState(false);
 
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
 
-  const images =
-    product?.images && product.images.length > 0 ? product.images : product?.image_url ? [product.image_url] : [];
+  // --- NORMALISASI DATA IMAGES ---
+  // Kita pastikan formatnya selalu Array of Object: [{url: "...", label: "..."}]
+  const getNormalizedImages = () => {
+    if (!product) return [];
+
+    let rawImages = [];
+    if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+      rawImages = product.images;
+    } else if (product.image_url) {
+      rawImages = [product.image_url];
+    }
+
+    return rawImages.map((img) => {
+      // Jika format baru (Object)
+      if (typeof img === "object" && img !== null) {
+        return { url: img.url, label: img.label || "" };
+      }
+      // Jika format lama (String URL)
+      return { url: img, label: "" };
+    });
+  };
+
+  const images = getNormalizedImages();
+  const currentImage = images[currentImgIdx]; // Data gambar aktif (Object)
 
   const nextImage = (e) => {
     if (e) e.stopPropagation();
@@ -63,15 +83,15 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!isAgreed) return; // Mencegah submit jika belum setuju
+    if (!isAgreed) return;
     onSubmit(product, name, email);
   };
 
   return (
     <>
-      <div className="fixed inset-0 z-51 flex items-end md:items-center justify-center bg-[#3E362E]/60 backdrop-blur-sm p-0 md:p-4 animate-fadeIn">
+      <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-[#3E362E]/60 backdrop-blur-sm p-0 md:p-4 animate-fadeIn">
         <div className="bg-[#FDFCF8] w-full md:max-w-4xl rounded-t-[32px] md:rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[95vh] md:max-h-[640px] relative border-t-4 md:border-4 border-[#3E362E]">
-          {/* Close Button - Lebih clean */}
+          {/* Close Button */}
           <button
             onClick={onClose}
             className="absolute top-5 right-5 z-30 bg-white/90 backdrop-blur-md border-2 border-[#3E362E] p-2 rounded-full hover:bg-red-50 transition-all shadow-[2px_2px_0px_0px_rgba(62,54,46,1)] active:translate-y-[2px] active:shadow-none">
@@ -88,15 +108,26 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
               className="relative w-full h-full aspect-4/5 md:aspect-auto md:h-full overflow-hidden bg-white group cursor-zoom-in"
               onClick={() => setIsZoomOpen(true)}>
               <img
-                onContextMenu={(e) => e.preventDefault()} // Mencegah klik kanan
-                onDragStart={(e) => e.preventDefault()} // Mencegah gambar di-drag ke desktop
-                src={images[currentImgIdx]}
+                onContextMenu={(e) => e.preventDefault()}
+                onDragStart={(e) => e.preventDefault()}
+                src={currentImage?.url}
                 alt={product.name}
                 className="w-full h-full object-cover transition-transform duration-700 md:group-hover:scale-110"
                 onError={(e) => (e.target.src = "https://placehold.co/600x600?text=No+Image")}
               />
 
-              {/* Overlay Gradient untuk Mobile agar indicator terlihat */}
+              {/* --- NEW: Floating Label Badge --- */}
+              {currentImage?.label && (
+                <div className="absolute top-4 left-4 z-20">
+                  <div className="px-3 py-1.5 bg-white/90 backdrop-blur border border-[#3E362E]/10 rounded-full shadow-sm">
+                    <p className="text-[10px] font-bold text-[#3E362E] uppercase tracking-wider">
+                      {currentImage.label}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Overlay Gradient untuk Mobile */}
               <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent md:hidden" />
 
               {images.length > 1 && (
@@ -115,9 +146,9 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
               )}
             </div>
 
-            {/* Indicator Foto - Lebih Slim */}
+            {/* Indicator Foto */}
             {images.length > 1 && (
-              <div className="absolute bottom-6 left-0 right-0 flex justify-center">
+              <div className="absolute bottom-6 left-0 right-0 flex justify-center z-20">
                 <div className="flex gap-2 px-3 py-1.5 bg-black/20 backdrop-blur-md rounded-full">
                   {images.map((_, idx) => (
                     <div
@@ -134,6 +165,7 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
 
           {/* KOLOM KANAN (FORM MODERN) */}
           <div className="w-full md:w-1/2 p-6 md:p-10 flex flex-col overflow-y-auto bg-[#FDFCF8]">
+            {/* ... (Bagian Form sama persis, tidak ada perubahan logic) ... */}
             <div className="mb-8">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#3E362E]/5 rounded-lg mb-4 border border-[#3E362E]/10">
                 <ImageIcon size={12} className="text-[#3E362E]" />
@@ -146,7 +178,6 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
                 {product.name}
               </h2>
 
-              {/* Deskripsi: Bye-bye kotak coklat, Hello Editorial Style */}
               <div className="relative">
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#3E362E]/10 rounded-full" />
                 <p className="pl-5 text-sm md:text-base text-[#6B5E51] leading-relaxed italic font-medium whitespace-pre-line">
@@ -193,12 +224,11 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
                   </div>
                 </div>
 
-                {/* --- BAGIAN BARU: SYARAT & KETENTUAN (Style menyesuaikan tema) --- */}
+                {/* Syarat & Ketentuan */}
                 <div className="pt-2">
                   <div
                     className="flex items-start gap-3 group cursor-pointer select-none"
                     onClick={() => setIsAgreed(!isAgreed)}>
-                    {/* Custom Checkbox agar sesuai tema (bukan checkbox browser default) */}
                     <div
                       className={`w-5 h-5 mt-0.5 shrink-0 rounded border-2 flex items-center justify-center transition-all duration-200 ${
                         isAgreed
@@ -225,7 +255,7 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
                 </div>
               </div>
 
-              {/* Section Harga & Tombol */}
+              {/* Total & Button */}
               <div className="pt-6 mt-4 border-t-2 border-dashed border-[#E5E0D8]">
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between px-1">
@@ -240,9 +270,6 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
                   <button
                     type="submit"
                     disabled={!isAgreed}
-                    // LOGIKA STYLE:
-                    // Jika setuju (isAgreed = true) -> Pakai class ASLI 100%
-                    // Jika belum (isAgreed = false) -> Pakai style disabled (abu-abu)
                     className={
                       isAgreed
                         ? "w-full bg-[#3E362E] hover:bg-[#8DA399] text-[#FDFCF8] font-black py-4 rounded-xl shadow-[4px_4px_0px_0px_rgba(141,163,153,1)] hover:-translate-y-1 active:translate-y-0 active:shadow-none transition-all flex justify-center items-center gap-3 uppercase tracking-widest text-sm group border-2 border-[#3E362E]"
@@ -284,15 +311,22 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
 
           <div className="relative w-full h-full flex items-center justify-center p-0 md:p-20">
             <img
-              onContextMenu={(e) => e.preventDefault()} // Mencegah klik kanan
-              onDragStart={(e) => e.preventDefault()} // Mencegah gambar di-drag ke desktop
-              src={images[currentImgIdx]}
+              onContextMenu={(e) => e.preventDefault()}
+              onDragStart={(e) => e.preventDefault()}
+              src={currentImage?.url}
               className="max-w-full max-h-full object-contain animate-popIn shadow-2xl"
               onClick={(e) => e.stopPropagation()}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             />
+
+            {/* LABEL DI LIGHTBOX JUGA */}
+            {currentImage?.label && (
+              <div className="absolute bottom-24 md:bottom-10 bg-black/60 backdrop-blur px-4 py-2 rounded-lg border border-white/20">
+                <p className="text-white text-sm font-medium tracking-wider uppercase">{currentImage.label}</p>
+              </div>
+            )}
           </div>
 
           <div className="absolute bottom-10">

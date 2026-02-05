@@ -1,22 +1,29 @@
 import { ShoppingBag } from "lucide-react";
 
 export const ProductCard = ({ product, onBuy }) => {
-  // --- LOGIC BARU: Handle Format Data (String vs Object) ---
-  let displayImage = product.image_url; // Fallback default
-  let displayLabel = "";
-
-  if (product.images && product.images.length > 0) {
-    const firstImage = product.images[0];
-
-    // Cek apakah format baru (Object) atau lama (String)
-    if (typeof firstImage === "object" && firstImage.url) {
-      displayImage = firstImage.url;
-      displayLabel = firstImage.label || "";
-    } else {
-      displayImage = firstImage; // Masih format lama (string url)
+  // Helper: Mendapatkan URL gambar utama dengan aman
+  const getMainImage = () => {
+    // 1. Jika images adalah array
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      const firstImg = product.images[0];
+      // Cek apakah format baru (Object) atau lama (String URL)
+      return typeof firstImg === "object" ? firstImg.url : firstImg;
     }
-  }
+    // 2. Fallback ke image_url (kolom legacy)
+    return product.image_url;
+  };
 
+  // Helper: Mendapatkan Label gambar utama
+  const getMainLabel = () => {
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      const firstImg = product.images[0];
+      // Hanya return label jika format object dan label tidak kosong
+      if (typeof firstImg === "object" && firstImg.label) {
+        return firstImg.label;
+      }
+    }
+    return null;
+  };
   return (
     <div
       onClick={() => onBuy(product)}
@@ -26,7 +33,7 @@ export const ProductCard = ({ product, onBuy }) => {
         <img
           onContextMenu={(e) => e.preventDefault()}
           onDragStart={(e) => e.preventDefault()}
-          src={displayImage} // <-- Pakai variable hasil logic di atas
+          src={getMainImage} // <-- Pakai variable hasil logic di atas
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           onError={(e) => {
@@ -35,10 +42,10 @@ export const ProductCard = ({ product, onBuy }) => {
         />
 
         {/* --- FITUR BARU: Menampilkan Label Gambar (Jika ada) --- */}
-        {displayLabel && (
+        {getMainLabel() && (
           <div className="absolute top-2 left-2 max-w-[80%]">
             <span className="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-full truncate block border border-white/20">
-              {displayLabel}
+              {getMainLabel()}
             </span>
           </div>
         )}
