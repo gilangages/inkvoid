@@ -19,7 +19,7 @@ export const MeetTheArtist = () => {
             <div className="w-full h-full rounded-[1.5rem] overflow-hidden bg-[#F3F0E9] relative">
               {/* FOTO KAMU */}
               <img
-                src="./me_new.png"
+                src="./me_black2.png"
                 alt="Abdian"
                 className="w-full h-full object-cover opacity-95 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
               />
