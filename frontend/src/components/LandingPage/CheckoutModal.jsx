@@ -13,7 +13,6 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
   const touchEndX = useRef(null);
 
   // --- NORMALISASI DATA IMAGES ---
-  // Kita pastikan formatnya selalu Array of Object: [{url: "...", label: "..."}]
   const getNormalizedImages = () => {
     if (!product) return [];
 
@@ -25,17 +24,15 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
     }
 
     return rawImages.map((img) => {
-      // Jika format baru (Object)
       if (typeof img === "object" && img !== null) {
         return { url: img.url, label: img.label || "" };
       }
-      // Jika format lama (String URL)
       return { url: img, label: "" };
     });
   };
 
   const images = getNormalizedImages();
-  const currentImage = images[currentImgIdx]; // Data gambar aktif (Object)
+  const currentImage = images[currentImgIdx];
 
   const nextImage = (e) => {
     if (e) e.stopPropagation();
@@ -89,7 +86,7 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-[#3E362E]/60 backdrop-blur-sm p-0 md:p-4 animate-fadeIn">
+      <div className="fixed inset-0 z-51 flex items-end md:items-center justify-center bg-[#3E362E]/60 backdrop-blur-sm p-0 md:p-4 animate-fadeIn">
         <div className="bg-[#FDFCF8] w-full md:max-w-4xl rounded-t-[32px] md:rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[95vh] md:max-h-[640px] relative border-t-4 md:border-4 border-[#3E362E]">
           {/* Close Button */}
           <button
@@ -116,7 +113,7 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
                 onError={(e) => (e.target.src = "https://placehold.co/600x600?text=No+Image")}
               />
 
-              {/* --- NEW: Floating Label Badge --- */}
+              {/* Label Floating di Modal (Tetap Ada) */}
               {currentImage?.label && (
                 <div className="absolute top-4 left-4 z-20">
                   <div className="px-3 py-1.5 bg-white/90 backdrop-blur border border-[#3E362E]/10 rounded-full shadow-sm">
@@ -163,9 +160,8 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
             )}
           </div>
 
-          {/* KOLOM KANAN (FORM MODERN) */}
+          {/* KOLOM KANAN (FORM) */}
           <div className="w-full md:w-1/2 p-6 md:p-10 flex flex-col overflow-y-auto bg-[#FDFCF8]">
-            {/* ... (Bagian Form sama persis, tidak ada perubahan logic) ... */}
             <div className="mb-8">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#3E362E]/5 rounded-lg mb-4 border border-[#3E362E]/10">
                 <ImageIcon size={12} className="text-[#3E362E]" />
@@ -188,7 +184,6 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
-                {/* Input Nama */}
                 <div className="space-y-2">
                   <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#3E362E]/40 ml-1">
                     Nama Kamu
@@ -203,7 +198,6 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
                   />
                 </div>
 
-                {/* Input Email */}
                 <div className="space-y-2">
                   <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#3E362E]/40 ml-1">
                     Email Pengiriman
@@ -224,7 +218,6 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
                   </div>
                 </div>
 
-                {/* Syarat & Ketentuan */}
                 <div className="pt-2">
                   <div
                     className="flex items-start gap-3 group cursor-pointer select-none"
@@ -255,7 +248,6 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
                 </div>
               </div>
 
-              {/* Total & Button */}
               <div className="pt-6 mt-4 border-t-2 border-dashed border-[#E5E0D8]">
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between px-1">
@@ -285,14 +277,24 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
         </div>
       </div>
 
-      {/* LIGHTBOX ZOOM */}
+      {/* --- LIGHTBOX ZOOM FULLSCREEN --- */}
       {isZoomOpen && (
         <div
           className="fixed inset-0 z-[100] bg-[#3E362E]/95 flex items-center justify-center animate-fadeIn"
           onClick={() => setIsZoomOpen(false)}>
+          {/* BUTTON CLOSE (Kanan Atas) */}
           <button className="absolute top-6 right-6 text-white bg-white/10 p-3 rounded-full border border-white/20 hover:bg-white/20 transition-all z-[110]">
             <X size={32} />
           </button>
+
+          {/* LABEL (Kiri Atas) - PERBAIKAN: Dipindah kesini agar tidak tabrakan dengan counter */}
+          {currentImage?.label && (
+            <div className="absolute top-6 left-6 z-[110]">
+              <div className="bg-black/60 backdrop-blur px-5 py-2.5 rounded-full border border-white/20">
+                <p className="text-white text-sm font-bold tracking-wider uppercase">{currentImage.label}</p>
+              </div>
+            </div>
+          )}
 
           {images.length > 1 && (
             <>
@@ -320,15 +322,9 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             />
-
-            {/* LABEL DI LIGHTBOX JUGA */}
-            {currentImage?.label && (
-              <div className="absolute bottom-24 md:bottom-10 bg-black/60 backdrop-blur px-4 py-2 rounded-lg border border-white/20">
-                <p className="text-white text-sm font-medium tracking-wider uppercase">{currentImage.label}</p>
-              </div>
-            )}
           </div>
 
+          {/* COUNTER (Bawah Tengah) */}
           <div className="absolute bottom-10">
             <div className="text-white font-black tracking-widest text-xs bg-black/40 px-6 py-2.5 rounded-full backdrop-blur-md border border-white/10 uppercase">
               {currentImgIdx + 1} / {images.length}
