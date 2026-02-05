@@ -33,7 +33,7 @@ export const ProductCard = ({ product, onBuy }) => {
         <img
           onContextMenu={(e) => e.preventDefault()}
           onDragStart={(e) => e.preventDefault()}
-          src={getMainImage} // <-- Pakai variable hasil logic di atas
+          src={getMainImage()} // <-- Pakai variable hasil logic di atas
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           onError={(e) => {

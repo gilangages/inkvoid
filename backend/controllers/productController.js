@@ -1,15 +1,56 @@
 const db = require("../config/database");
 
-// 1. Ganti nama jadi getAllProducts (biar cocok sama routes)
+// Helper untuk parsing JSON dengan aman (menghindari crash jika JSON rusak)
+const safeParseJSON = (jsonString, fallback = []) => {
+  try {
+    return JSON.parse(jsonString);
+  } catch (e) {
+    return fallback;
+  }
+};
+
+// 1. Get All Products (Dengan Auto-Label untuk data lama)
 const getAllProducts = async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM products ORDER BY id DESC");
 
-    // Parsing JSON images jika ada
-    const products = rows.map((product) => ({
-      ...product,
-      images: typeof product.images === "string" ? JSON.parse(product.images) : product.images || [product.image_url],
-    }));
+    const products = rows.map((product) => {
+      let images = [];
+
+      // Parsing kolom images (bisa berupa string JSON, null, atau sudah object)
+      if (typeof product.images === "string") {
+        images = safeParseJSON(product.images, []);
+      } else if (Array.isArray(product.images)) {
+        images = product.images;
+      } else if (product.image_url) {
+        // Fallback untuk data legacy yang cuma punya 1 image_url
+        images = [product.image_url];
+      }
+
+      // [FEATURE] Normalisasi Data Gambar
+      // Memastikan semua formatnya seragam: { url: "...", label: "..." }
+      const normalizedImages = images.map((img) => {
+        // Jika data masih berupa string URL polos
+        if (typeof img === "string") {
+          const filename = img.split("/").pop(); // Ambil nama file dari URL
+          return {
+            url: img,
+            label: filename, // Label otomatis dari nama file
+          };
+        }
+
+        // Jika sudah object tapi label kosong/undefined
+        return {
+          ...img,
+          label: img.label || img.url.split("/").pop(), // Label otomatis jika kosong
+        };
+      });
+
+      return {
+        ...product,
+        images: normalizedImages,
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -22,14 +63,7 @@ const getAllProducts = async (req, res) => {
   }
 };
 
-const safeParseJSON = (jsonString, fallback = []) => {
-  try {
-    return JSON.parse(jsonString);
-  } catch (e) {
-    return fallback;
-  }
-};
-
+// 2. Create Product (Dengan Default Label = Nama File)
 const createProduct = async (req, res) => {
   try {
     const { name, price, description, file_url, image_labels } = req.body;
@@ -41,21 +75,21 @@ const createProduct = async (req, res) => {
     const protocol = req.protocol;
     const host = req.get("host");
 
-    // Parse labels yang dikirim dari frontend (Array of Strings)
+    // Parse labels dari frontend
     const labels = safeParseJSON(image_labels);
 
-    // Map files ke struktur baru
-    // Index array otomatis menjadi urutan (order)
+    // Map files ke struktur object baru
     const imageObjects = req.files.map((file, index) => ({
       url: `${protocol}://${host}/uploads/${file.filename}`,
-      label: labels[index] || "", // Label sesuai index, default kosong
+      // [LOGIC] Jika label dari frontend kosong, pakai nama file asli (tanpa ekstensi)
+      label: labels[index] || file.originalname.split(".")[0],
       order: index,
     }));
 
-    // Gambar utama adalah index ke-0
+    // Gambar utama adalah index ke-0 (urutan pertama)
     const mainImage = imageObjects[0].url;
 
-    // Simpan array object ke database sebagai JSON string
+    // Simpan sebagai JSON string
     const imagesJson = JSON.stringify(imageObjects);
 
     const query =
@@ -73,18 +107,16 @@ const createProduct = async (req, res) => {
   }
 };
 
-// 3. Tambahkan fungsi Delete (karena dipanggil di routes)
+// 3. Delete Product
 const deleteProduct = async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Cek dulu apakah produk ada (Opsional, tapi best practice)
     const [check] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
     if (check.length === 0) {
       return res.status(404).json({ success: false, message: "Produk tidak ditemukan" });
     }
 
-    // Lakukan penghapusan
     await db.query("DELETE FROM products WHERE id = ?", [id]);
 
     res.status(200).json({
@@ -97,52 +129,84 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+// 4. Update Product (Support Reorder & Metadata)
 const updateProduct = async (req, res) => {
   const { id } = req.params;
-  const { name, price, description, deleted_images } = req.body;
+  // Kita menerima 'images_metadata' yang berisi urutan baru
+  const { name, price, description, images_metadata } = req.body;
 
   try {
-    // 1. Cek apakah produk ada?
+    // 1. Cek produk lama
     const [existing] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
     if (existing.length === 0) {
       return res.status(404).json({ success: false, message: "Produk tidak ditemukan" });
     }
 
-    const oldData = existing[0];
+    let finalImages = [];
 
-    // 2. Logic Penggabungan Gambar
-    // Ambil gambar lama dari DB (parse JSON jika string, atau array kosong)
-    let currentImages = [];
-    if (oldData.images) {
-      currentImages = typeof oldData.images === "string" ? JSON.parse(oldData.images) : oldData.images;
-    } else if (oldData.image_url) {
-      currentImages = [oldData.image_url];
-    }
-
-    // A. Hapus gambar yang diminta user (FILTERING)
-    if (deleted_images) {
-      const deletedList = JSON.parse(deleted_images); // Parse string array dari frontend
-      currentImages = currentImages.filter((img) => !deletedList.includes(img));
-    }
-
-    // B. Tambah gambar baru jika ada (APPENDING)
-    if (req.files && req.files.length > 0) {
+    // 2. Logic Baru: Menggunakan Metadata Urutan dari Frontend
+    if (images_metadata) {
+      const metadata = safeParseJSON(images_metadata);
       const protocol = req.protocol;
       const host = req.get("host");
 
-      const newImageUrls = req.files.map((file) => {
-        return `${protocol}://${host}/uploads/${file.filename}`;
-      });
+      // Pointer untuk mengambil file baru dari req.files secara berurutan
+      let newFileIndex = 0;
 
-      currentImages = [...currentImages, ...newImageUrls];
+      // Map metadata untuk menyusun array finalImages sesuai urutan yang diinginkan user
+      finalImages = metadata
+        .map((item) => {
+          if (item.type === "existing") {
+            // Jika gambar lama: pertahankan URL dan update labelnya
+            return {
+              url: item.url,
+              label: item.label,
+              order: item.order,
+            };
+          } else if (item.type === "new") {
+            // Jika gambar baru: ambil file fisik dari req.files
+            if (req.files && req.files[newFileIndex]) {
+              const file = req.files[newFileIndex];
+              newFileIndex++; // Geser pointer ke file berikutnya
+
+              return {
+                url: `${protocol}://${host}/uploads/${file.filename}`,
+                // Pakai label dari input user, atau fallback ke nama asli file
+                label: item.label || file.originalname.split(".")[0],
+                order: item.order,
+              };
+            }
+          }
+          return null;
+        })
+        .filter(Boolean); // Hapus item null (jika ada error index)
+    } else {
+      // 3. Fallback Logic (Jika frontend belum kirim metadata) - Backward Compatibility
+      const oldData = existing[0];
+      let currentImages = typeof oldData.images === "string" ? JSON.parse(oldData.images) : oldData.images || [];
+
+      // Jika format lama string URL, ubah ke object
+      currentImages = currentImages.map((img) => (typeof img === "string" ? { url: img, label: "" } : img));
+
+      // Append gambar baru (jika ada) di akhir
+      if (req.files && req.files.length > 0) {
+        const protocol = req.protocol;
+        const host = req.get("host");
+        const newImages = req.files.map((file) => ({
+          url: `${protocol}://${host}/uploads/${file.filename}`,
+          label: file.originalname.split(".")[0],
+          order: 99,
+        }));
+        currentImages = [...currentImages, ...newImages];
+      }
+      finalImages = currentImages;
     }
 
-    // C. Tentukan Main Image (Thumbnail)
-    // Ambil gambar pertama dari array hasil gabungan, jika kosong set null
-    const finalMainImage = currentImages.length > 0 ? currentImages[0] : null;
-    const finalImagesJson = JSON.stringify(currentImages);
+    // 4. Update Database
+    // Gambar pertama di array hasil reorder akan jadi Main Image (Thumbnail)
+    const finalMainImage = finalImages.length > 0 ? finalImages[0].url : null;
+    const finalImagesJson = JSON.stringify(finalImages);
 
-    // 3. Update Database
     const query = `
       UPDATE products
       SET name = ?, price = ?, description = ?, image_url = ?, images = ?
@@ -155,7 +219,7 @@ const updateProduct = async (req, res) => {
       success: true,
       message: "Produk berhasil diupdate!",
       data: {
-        images: currentImages,
+        images: finalImages,
       },
     });
   } catch (error) {
@@ -164,15 +228,15 @@ const updateProduct = async (req, res) => {
   }
 };
 
+// 5. Bulk Delete
 const bulkDeleteProducts = async (req, res) => {
-  const { ids } = req.body; // Ambil array ID dari frontend
+  const { ids } = req.body;
 
   try {
     if (!ids || ids.length === 0) {
       return res.status(400).json({ success: false, message: "Tidak ada ID yang dipilih" });
     }
 
-    // Hapus semua produk yang ID-nya ada di dalam array
     const query = "DELETE FROM products WHERE id IN (?)";
     await db.query(query, [ids]);
 
@@ -181,6 +245,5 @@ const bulkDeleteProducts = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-// Jangan lupa tambahkan ke module.exports
-// Pastikan export namanya SAMA dengan yang di atas
+
 module.exports = { getAllProducts, createProduct, deleteProduct, updateProduct, bulkDeleteProducts };

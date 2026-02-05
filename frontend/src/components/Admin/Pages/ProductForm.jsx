@@ -24,8 +24,25 @@ export default function ProductForm() {
   const [labels, setLabels] = useState({});
 
   const handleFileChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
-    setFiles((prev) => [...prev, ...selectedFiles]);
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFiles = Array.from(e.target.files);
+
+      // Update Files
+      setFiles((prev) => [...prev, ...selectedFiles]);
+
+      // [FEATURE] Auto-fill Labels dengan nama file
+      const currentTotal = files.length;
+      const newLabels = { ...labels };
+
+      selectedFiles.forEach((file, i) => {
+        // Index label melanjutkan urutan file yang sudah ada
+        // Hapus ekstensi file agar rapi (contoh: 'kucing.jpg' -> 'kucing')
+        const nameWithoutExt = file.name.split(".").slice(0, -1).join(".");
+        newLabels[currentTotal + i] = nameWithoutExt;
+      });
+
+      setLabels(newLabels);
+    }
   };
 
   // Handle Label Change
