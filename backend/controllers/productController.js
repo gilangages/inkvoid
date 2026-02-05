@@ -12,7 +12,7 @@ const safeParseJSON = (jsonString, fallback = []) => {
 // 1. Get All Products (Dengan Auto-Label untuk data lama)
 const getAllProducts = async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT * FROM products ORDER BY id DESC");
+    const [rows] = await db.query("SELECT * FROM products WHERE is_deleted = 0 ORDER BY id DESC");
 
     const products = rows.map((product) => {
       let images = [];
@@ -113,18 +113,23 @@ const deleteProduct = async (req, res) => {
 
   try {
     const [check] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
-    if (check.length === 0) {
-      return res.status(404).json({ success: false, message: "Produk tidak ditemukan" });
-    }
+    if (check.length === 0) return res.status(404).json({ message: "Produk tidak ditemukan" });
 
-    await db.query("DELETE FROM products WHERE id = ?", [id]);
+    // [FIX] Lakukan Soft Delete
+    await db.query("UPDATE products SET is_deleted = 1 WHERE id = ?", [id]);
 
-    res.status(200).json({
-      success: true,
-      message: "Produk berhasil dihapus",
-    });
+    res.status(200).json({ success: true, message: "Produk berhasil dihapus (soft delete)" });
   } catch (error) {
     console.error("Error delete product:", error);
+
+    // [FIX] Tangani error Foreign Key Constraint (Produk sudah pernah dibeli)
+    if (error.code === "ER_ROW_IS_REFERENCED_2") {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Produk tidak dapat dihapus karena sudah memiliki riwayat transaksi. Sebaiknya nonaktifkan produk saja.",
+      });
+    }
     res.status(500).json({ success: false, message: "Gagal menghapus produk", error: error.message });
   }
 };
