@@ -136,4 +136,47 @@ const getAllTransactions = async (req, res) => {
   }
 };
 
-module.exports = { createTransaction, handleNotification, getAllTransactions };
+// 5. Update Status Transaksi (Manual Trigger oleh Admin)
+const updateTransactionStatus = async (req, res) => {
+  const { order_id } = req.params;
+  const { status } = req.body; // misal: 'success' atau 'failed'
+
+  try {
+    // Update status di database
+    const [result] = await db.query("UPDATE transactions SET status = ? WHERE order_id = ?", [status, order_id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Order ID tidak ditemukan." });
+    }
+
+    // [OPSIONAL] Jika status diubah jadi success, bisa panggil fungsi kirim email otomatis di sini
+    if (status === "success") {
+      // Ambil data detail transaksi untuk keperluan email
+      const [rows] = await db.query(
+        `
+        SELECT t.*, p.name as product_name, p.price
+        FROM transactions t
+        JOIN products p ON t.product_id = p.id
+        WHERE t.order_id = ?`,
+        [order_id],
+      );
+
+      if (rows.length > 0) {
+        // Panggil fungsi sendEmail yang sudah kamu buat di atas
+        // Pastikan sendEmail dimodifikasi sedikit agar menerima data object yang sesuai,
+        // atau sesuaikan struktur data di sini.
+        // await sendEmail(rows[0]);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Status berhasil diubah menjadi ${status}`,
+    });
+  } catch (error) {
+    console.error("Error updating status:", error);
+    res.status(500).json({ message: "Gagal mengupdate status." });
+  }
+};
+
+module.exports = { createTransaction, handleNotification, getAllTransactions, updateTransactionStatus };

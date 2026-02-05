@@ -99,10 +99,8 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!isAgreed || !email) return; // Validasi email wajib diisi
+    if (!isAgreed || !email) return;
 
-    // LOGIC UPDATE: Mengirim object product yang digabung dengan email pembeli
-    // Parent component (onSubmit) nanti tinggal ambil: data.buyerEmail
     onSubmit({ ...product, buyerEmail: email });
   };
 
@@ -120,7 +118,12 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
   return (
     <>
       <div className="fixed inset-0 z-51 flex items-end md:items-center justify-center bg-[#3E362E]/60 backdrop-blur-sm p-0 md:p-4 animate-fadeIn">
-        <div className="bg-[#FDFCF8] w-full md:max-w-4xl rounded-t-[32px] md:rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[95vh] md:max-h-[640px] relative border-t-4 md:border-4 border-[#3E362E]">
+        {/* Container Modal Utama */}
+        {/* FIX 1 (Mobile): Gunakan h-[85vh] agar tidak kepanjangan dan kena address bar browser.
+            FIX 2 (Desktop): Gunakan h-[640px] (FIXED height) bukan h-auto. Ini KUNCI agar scrollbar muncul.
+            Hapus md:max-h-[640px] karena kita sudah set tinggi pastinya.
+        */}
+        <div className="bg-[#FDFCF8] w-full md:max-w-4xl rounded-t-[32px] md:rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-[85vh] md:h-[640px] relative border-t-4 md:border-4 border-[#3E362E]">
           {/* Close Button */}
           <button
             onClick={onClose}
@@ -128,14 +131,14 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
             <X size={18} color="#3E362E" strokeWidth={3} />
           </button>
 
-          {/* KOLOM KIRI (FOTO - TIDAK DIUBAH) */}
+          {/* KOLOM KIRI (FOTO) */}
           <div
-            className="w-full md:w-1/2 bg-[#EAE7DF] relative overflow-hidden"
+            className="w-full md:w-1/2 h-[35vh] md:h-full shrink-0 bg-[#EAE7DF] relative overflow-hidden"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}>
             <div
-              className="relative w-full h-full aspect-4/5 md:aspect-auto md:h-full overflow-hidden bg-white group cursor-zoom-in"
+              className="relative w-full h-full overflow-hidden bg-white group cursor-zoom-in"
               onClick={() => setIsZoomOpen(true)}>
               <img
                 onContextMenu={(e) => e.preventDefault()}
@@ -190,93 +193,107 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
             )}
           </div>
 
-          {/* KOLOM KANAN (FORM) */}
-          <div className="w-full md:w-1/2 p-6 md:p-10 flex flex-col overflow-y-auto bg-[#FDFCF8]">
-            <div className="mb-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#3E362E]/5 rounded-lg mb-4 border border-[#3E362E]/10">
-                <ImageIcon size={12} className="text-[#3E362E]" />
-                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#3E362E]">Karya Digital</span>
-              </div>
-
-              <h2 className="text-3xl font-black text-[#3E362E] mb-4 leading-[1.1] uppercase italic tracking-tight">
-                {product.name}
-              </h2>
-
-              <div className="relative">
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#3E362E]/10 rounded-full" />
-                <div className="pl-5 text-sm md:text-base text-[#6B5E51] leading-relaxed italic font-medium">
-                  <ReactMarkdown components={markdownComponents}>
-                    {product.description || "Koleksi aset digital eksklusif untuk kebutuhan kreatifmu."}
-                  </ReactMarkdown>
-                </div>
-              </div>
-            </div>
-
-            {/* FORM AREA */}
-            <form onSubmit={handleSubmit} className="space-y-4 flex-grow flex flex-col justify-end">
-              {/* --- INPUT EMAIL BARU --- */}
-              <div className="bg-white p-1 rounded-xl border-2 border-[#E5E0D8] focus-within:border-[#3E362E] transition-colors relative group">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#3E362E]/40 group-focus-within:text-[#3E362E]">
-                  <Mail size={18} />
-                </div>
-                <input
-                  type="email"
-                  required
-                  placeholder="Masukkan Email Gmail (Wajib)"
-                  className="w-full pl-10 pr-4 py-3 bg-transparent text-[#3E362E] font-medium outline-none placeholder:text-[#3E362E]/30 text-sm md:text-base"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <p className="text-[10px] text-[#6B5E51]/80 px-1 -mt-2 mb-2 italic">
-                *Email digunakan untuk memberi akses file di Google Drive.
-              </p>
-
-              {/* INSTRUKSI LANGKAH SELANJUTNYA */}
-              <div className="bg-[#F3F0E9] p-4 rounded-xl border border-[#E5E0D8] space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="bg-[#3E362E] text-white p-1 rounded-full">
-                    <MessageCircle size={12} />
-                  </div>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[#3E362E]">Info Pengiriman</p>
-                </div>
-
-                <ul className="space-y-1 text-xs text-[#6B5E51] font-medium leading-relaxed list-disc pl-4">
-                  <li>
-                    Lanjutkan ke <strong>WhatsApp</strong> untuk pembayaran.
-                  </li>
-                  <li>Link Google Drive akan dikirim/diaktifkan ke email di atas setelah bukti transfer diterima.</li>
-                </ul>
-              </div>
-
-              <div className="pt-2">
-                <div
-                  className="flex items-start gap-3 group cursor-pointer select-none"
-                  onClick={() => setIsAgreed(!isAgreed)}>
-                  <div
-                    className={`w-5 h-5 mt-0.5 shrink-0 rounded border-2 flex items-center justify-center transition-all duration-200 ${
-                      isAgreed
-                        ? "bg-[#3E362E] border-[#3E362E]"
-                        : "bg-white border-[#E5E0D8] group-hover:border-[#8DA399]"
-                    }`}>
-                    {isAgreed && <Check size={14} className="text-[#FDFCF8]" strokeWidth={4} />}
+          {/* KOLOM KANAN (FORM & KONTEN) */}
+          {/* FIX 3: Tambahkan 'min-h-0' dan pastikan structure flex benar */}
+          <div className="w-full md:w-1/2 flex flex-col flex-1 md:h-full min-h-0 bg-[#FDFCF8] overflow-hidden">
+            {/* FIX 4: Form juga perlu min-h-0 agar flex-grow di dalamnya bekerja jika kontennya panjang */}
+            <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
+              {/* AREA 1: SCROLLABLE CONTENT */}
+              <div className="flex-grow overflow-y-auto p-6 md:p-10">
+                <div className="mb-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#3E362E]/5 rounded-lg mb-4 border border-[#3E362E]/10">
+                    <ImageIcon size={12} className="text-[#3E362E]" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#3E362E]">
+                      Karya Digital
+                    </span>
                   </div>
 
-                  <p className="text-xs text-[#6B5E51] font-medium leading-snug">
-                    Saya menyetujui{" "}
-                    <Link to="/terms" className="underline decoration-dotted hover:text-[#3E362E] transition-colors">
-                      Syarat & Ketentuan
-                    </Link>{" "}
-                    serta{" "}
-                    <Link to="/privacy" className="underline decoration-dotted hover:text-[#3E362E] transition-colors">
-                      Kebijakan Privasi
-                    </Link>
-                    .
+                  <h2 className="text-3xl font-black text-[#3E362E] mb-4 leading-[1.1] uppercase italic tracking-tight">
+                    {product.name}
+                  </h2>
+
+                  <div className="relative">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#3E362E]/10 rounded-full" />
+                    <div className="pl-5 text-sm md:text-base text-[#6B5E51] leading-relaxed italic font-medium">
+                      <ReactMarkdown components={markdownComponents}>
+                        {product.description || "Koleksi aset digital eksklusif untuk kebutuhan kreatifmu."}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                </div>
+
+                {/* FORM INPUTS */}
+                <div className="space-y-4">
+                  <div className="bg-white p-1 rounded-xl border-2 border-[#E5E0D8] focus-within:border-[#3E362E] transition-colors relative group">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#3E362E]/40 group-focus-within:text-[#3E362E]">
+                      <Mail size={18} />
+                    </div>
+                    <input
+                      type="email"
+                      required
+                      placeholder="Masukkan Email Gmail (Wajib)"
+                      className="w-full pl-10 pr-4 py-3 bg-transparent text-[#3E362E] font-medium outline-none placeholder:text-[#3E362E]/30 text-sm md:text-base"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                  <p className="text-[10px] text-[#6B5E51]/80 px-1 -mt-2 mb-2 italic">
+                    *Email digunakan untuk memberi akses file di Google Drive.
                   </p>
+
+                  <div className="bg-[#F3F0E9] p-4 rounded-xl border border-[#E5E0D8] space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-[#3E362E] text-white p-1 rounded-full">
+                        <MessageCircle size={12} />
+                      </div>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-[#3E362E]">Info Pengiriman</p>
+                    </div>
+
+                    <ul className="space-y-1 text-xs text-[#6B5E51] font-medium leading-relaxed list-disc pl-4">
+                      <li>
+                        Lanjutkan ke <strong>WhatsApp</strong> untuk pembayaran.
+                      </li>
+                      <li>
+                        Link Google Drive akan dikirim/diaktifkan ke email di atas setelah bukti transfer diterima.
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="pt-2">
+                    <div
+                      className="flex items-start gap-3 group cursor-pointer select-none"
+                      onClick={() => setIsAgreed(!isAgreed)}>
+                      <div
+                        className={`w-5 h-5 mt-0.5 shrink-0 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                          isAgreed
+                            ? "bg-[#3E362E] border-[#3E362E]"
+                            : "bg-white border-[#E5E0D8] group-hover:border-[#8DA399]"
+                        }`}>
+                        {isAgreed && <Check size={14} className="text-[#FDFCF8]" strokeWidth={4} />}
+                      </div>
+
+                      <p className="text-xs text-[#6B5E51] font-medium leading-snug">
+                        Saya menyetujui{" "}
+                        <Link
+                          to="/terms"
+                          className="underline decoration-dotted hover:text-[#3E362E] transition-colors">
+                          Syarat & Ketentuan
+                        </Link>{" "}
+                        serta{" "}
+                        <Link
+                          to="/privacy"
+                          className="underline decoration-dotted hover:text-[#3E362E] transition-colors">
+                          Kebijakan Privasi
+                        </Link>
+                        .
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="pt-4 mt-2 border-t-2 border-dashed border-[#E5E0D8]">
+              {/* AREA 2: FIXED FOOTER */}
+              <div className="p-4 md:p-10 border-t-2 border-dashed border-[#E5E0D8] bg-[#FDFCF8] z-10 shrink-0 shadow-[0_-4px_10px_-2px_rgba(0,0,0,0.05)]">
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between px-1">
                     <span className="text-[11px] font-black uppercase tracking-[0.2em] text-[#6B5E51]">
@@ -309,7 +326,7 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
         </div>
       </div>
 
-      {/* --- LIGHTBOX ZOOM FULLSCREEN (TIDAK DIUBAH) --- */}
+      {/* --- LIGHTBOX ZOOM (TIDAK BERUBAH) --- */}
       {isZoomOpen && (
         <div
           className="fixed inset-0 z-[100] bg-[#3E362E]/95 flex items-center justify-center animate-fadeIn"

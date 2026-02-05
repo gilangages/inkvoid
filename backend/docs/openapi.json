@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Luma Store API",
-    "description": "Dokumentasi API Luma Digital Asset Store. Mencakup Public API dan Admin Management.",
+    "title": "Luma Sticker Store API",
+    "description": "Dokumentasi API untuk project Luma Sticker (E-commerce Digital Assets).",
     "version": "1.0.0",
     "contact": {
       "name": "Abdian Developer",
@@ -12,7 +12,11 @@
   "servers": [
     {
       "url": "http://localhost:3000/api",
-      "description": "Local Development Server"
+      "description": "Local Server (Port 3000)"
+    },
+    {
+      "url": "https://lumasticker.vercel.app/api",
+      "description": "Production Server"
     }
   ],
   "components": {
@@ -33,42 +37,51 @@
           },
           "name": {
             "type": "string",
-            "example": "Sticker Pack Vol. 1"
+            "example": "Sticker Pack Vol. 1 (Chibi Style)"
           },
           "price": {
             "type": "number",
-            "example": 10000
+            "example": 15000
           },
           "description": {
             "type": "string",
-            "example": "Stiker lucu format PNG & PDF."
+            "example": "Stiker lucu format PNG & PDF resolusi tinggi."
           },
           "image_url": {
             "type": "string",
-            "example": "https://placehold.co/600x400"
+            "description": "URL gambar utama (diambil dari images[0])",
+            "example": "http://localhost:5000/uploads/1700000000-file.png"
           },
-          "file_url": {
-            "type": "string",
-            "example": "https://drive.google.com/..."
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "filename1.png",
+              "filename2.png"
+            ]
           }
         }
       },
-      "LoginRequest": {
+      "Transaction": {
         "type": "object",
-        "required": [
-          "email",
-          "password"
-        ],
         "properties": {
-          "email": {
+          "order_id": {
             "type": "string",
-            "format": "email",
-            "example": "abdian@example.com"
+            "example": "LUMA-173859..."
           },
-          "password": {
+          "gross_amount": {
+            "type": "number",
+            "example": 15000
+          },
+          "customer_name": {
             "type": "string",
-            "format": "password",
-            "example": "rahasia123"
+            "example": "Budi"
+          },
+          "transaction_status": {
+            "type": "string",
+            "example": "settlement"
           }
         }
       }
@@ -77,15 +90,15 @@
   "tags": [
     {
       "name": "Auth",
-      "description": "Autentikasi Admin"
+      "description": "Autentikasi Admin (JWT)"
     },
     {
       "name": "Products",
-      "description": "Manajemen Produk (Public & Admin)"
+      "description": "Manajemen Sticker Pack"
     },
     {
       "name": "Payment",
-      "description": "Transaksi Midtrans"
+      "description": "Integrasi Midtrans"
     }
   ],
   "paths": {
@@ -95,44 +108,47 @@
           "Auth"
         ],
         "summary": "Login Admin",
-        "description": "Mendapatkan JWT Token untuk akses fitur Admin.",
+        "description": "Dapatkan Token JWT untuk mengakses fitur Admin.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": "admin@luma.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "password123"
+                  }
+                }
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Login Berhasil",
+            "description": "Login Berhasil (Simpan token ini)",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
                     "token": {
                       "type": "string",
-                      "example": "eyJhGciOiJIUzI1Ni..."
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Login berhasil"
+                      "example": "eyJhGci..."
                     }
                   }
                 }
               }
             }
-          },
-          "401": {
-            "description": "Email atau Password Salah"
           }
         }
       }
@@ -143,7 +159,6 @@
           "Auth"
         ],
         "summary": "Logout Admin",
-        "description": "Menghapus sesi admin (Client harus menghapus token).",
         "security": [
           {
             "bearerAuth": []
@@ -151,7 +166,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Logout Berhasil"
+            "description": "Logout berhasil"
           }
         }
       }
@@ -182,7 +197,7 @@
         "tags": [
           "Products"
         ],
-        "summary": "Tambah Produk Baru (Admin Only) dengan Upload Gambar",
+        "summary": "Tambah Produk Baru (Admin)",
         "security": [
           {
             "bearerAuth": []
@@ -197,8 +212,7 @@
                 "required": [
                   "name",
                   "price",
-                  "description",
-                  "images"
+                  "description"
                 ],
                 "properties": {
                   "name": {
@@ -216,10 +230,7 @@
                       "type": "string",
                       "format": "binary"
                     },
-                    "description": "Upload satu atau banyak file gambar"
-                  },
-                  "file_url": {
-                    "type": "string"
+                    "description": "Upload hingga 20 gambar"
                   }
                 }
               }
@@ -228,13 +239,10 @@
         },
         "responses": {
           "201": {
-            "description": "Produk Dibuat"
+            "description": "Produk Created"
           },
           "401": {
             "description": "Unauthorized"
-          },
-          "500": {
-            "description": "Server Error"
           }
         }
       }
@@ -244,8 +252,7 @@
         "tags": [
           "Products"
         ],
-        "summary": "Update Produk (Admin Only)",
-        "description": "Mengupdate data produk. Kirim gambar baru jika ingin mengganti gambar.",
+        "summary": "Update Produk",
         "security": [
           {
             "bearerAuth": []
@@ -262,7 +269,6 @@
           }
         ],
         "requestBody": {
-          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
@@ -282,10 +288,110 @@
                     "items": {
                       "type": "string",
                       "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Update Berhasil"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Hapus Produk Satuan",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Terhapus"
+          }
+        }
+      }
+    },
+    "/products/bulk-delete": {
+      "post": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Hapus Banyak Produk Sekaligus",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
                     },
-                    "description": "Opsional: Upload gambar baru (akan mereplace gambar lama)"
+                    "example": [
+                      1,
+                      5,
+                      8
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Produk berhasil dihapus"
+          }
+        }
+      }
+    },
+    "/payment/purchase": {
+      "post": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "Buat Transaksi (Snap Token)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "product_id",
+                  "customer_name",
+                  "customer_email"
+                ],
+                "properties": {
+                  "product_id": {
+                    "type": "integer"
                   },
-                  "file_url": {
+                  "customer_name": {
+                    "type": "string"
+                  },
+                  "customer_email": {
                     "type": "string"
                   }
                 }
@@ -295,87 +401,136 @@
         },
         "responses": {
           "200": {
-            "description": "Produk Berhasil Diupdate"
-          },
-          "400": {
-            "description": "Input Data Salah"
-          },
-          "401": {
-            "description": "Unauthorized"
+            "description": "Token Transaksi Dibuat"
           }
-        },
-        "delete": {
-          "tags": [
-            "Products"
-          ],
-          "summary": "Hapus Produk (Admin Only)",
-          "security": [
-            {
-              "bearerAuth": []
-            }
-          ],
-          "parameters": [
-            {
-              "in": "path",
-              "name": "id",
-              "required": true,
-              "schema": {
-                "type": "integer"
+        }
+      }
+    },
+    "/payment/notification": {
+      "post": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "Webhook Midtrans (Jangan ditembak manual)",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/payment/admin/transactions": {
+      "get": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "Lihat Semua Riwayat Transaksi (Admin)",
+        "description": "Mengambil semua riwayat transaksi",
+        "responses": {
+          "200": {
+            "description": "List Transaksi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Transaction"
+                  }
+                }
               }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Produk Dihapus"
-            },
-            "401": {
-              "description": "Unauthorized"
             }
           }
         }
-      },
-      "/payment/purchase": {
-        "post": {
-          "tags": [
-            "Payment"
-          ],
-          "summary": "Buat Transaksi Snap",
-          "requestBody": {
+      }
+    },
+    "/payment/admin/transaction/{order_id}": {
+      "put": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "Update Status Transaksi (Admin)",
+        "description": "Mengubah status transaksi secara manual (misal: pending -> success).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "LUMA-WA-173859..."
+            },
+            "description": "ID Order transaksi"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "example": "success",
+                    "enum": [
+                      "pending",
+                      "success",
+                      "failed"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status berhasil diubah"
+          },
+          "404": {
+            "description": "Order ID tidak ditemukan"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Server Health Check",
+        "description": "Cek apakah server berjalan dengan baik (digunakan oleh UptimeRobot/Vercel).",
+        "responses": {
+          "200": {
+            "description": "Server Healthy",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "product_id": {
-                      "type": "integer"
+                    "success": {
+                      "type": "boolean",
+                      "example": true
                     },
-                    "customer_name": {
-                      "type": "string"
+                    "message": {
+                      "type": "string",
+                      "example": "Server is healthy"
                     },
-                    "customer_email": {
-                      "type": "string"
+                    "uptime": {
+                      "type": "number",
+                      "example": 120.5
                     }
                   }
                 }
               }
-            }
-          },
-          "responses": {
-            "200": {
-              "description": "Success"
-            }
-          }
-        }
-      },
-      "/payment/notification": {
-        "post": {
-          "tags": [
-            "Payment"
-          ],
-          "summary": "Webhook Midtrans",
-          "responses": {
-            "200": {
-              "description": "OK"
             }
           }
         }

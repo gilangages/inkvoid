@@ -1,19 +1,32 @@
-import { useEffect, useState } from "react";
-import { ShoppingBag, User, Mail, Calendar, Tag, CreditCard } from "lucide-react";
+import { useState } from "react";
+import { ShoppingBag, User, Mail, Calendar, Tag, XCircle, CheckCircle } from "lucide-react";
+import { alertConfirm, alertError, alertSuccess } from "../../../lib/alert";
+import { changeStatusPaymentByAdmin, getAllTransactions } from "../../../lib/api/PaymentApi";
+import { useEffectOnce, useLocalStorage } from "react-use";
 
 export default function OrderHistory() {
+  const [token, _] = useLocalStorage("token", "");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetch(`${import.meta.env.VITE_APP_PATH}/payment/admin/transactions`)
-      .then((res) => res.json())
-      .then((json) => {
-        setOrders(json.data || []);
-        setLoading(false);
-      })
-      .catch((err) => console.error(err));
-  }, []);
+  async function fetchAllTransactions() {
+    setLoading(true);
+    try {
+      const response = await getAllTransactions(token);
+      const responseBody = await response.json();
+      console.log(responseBody);
+
+      if (response.status === 200) {
+        setOrders(responseBody.data || []);
+      } else {
+        alertError(responseBody.message);
+      }
+    } catch (e) {
+      console.error("Error connection: ", e);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const getStatusStyle = (status) => {
     switch (status.toLowerCase()) {
@@ -25,6 +38,35 @@ export default function OrderHistory() {
         return "bg-red-100 text-red-700 border-red-200";
     }
   };
+
+  async function handleUpdateStatus(orderId, newStatus) {
+    // Tentukan pesan konfirmasi berdasarkan status
+    const actionName = newStatus === "success" ? "TERIMA (LUNAS)" : "TOLAK (BATAL)";
+
+    if (!(await alertConfirm(`Yakin ingin mengubah status menjadi ${actionName}?`))) {
+      return;
+    }
+
+    try {
+      const response = await changeStatusPaymentByAdmin(token, { orderId, newStatus });
+      const responseBody = await response.json();
+      console.log(responseBody);
+
+      if (response.status === 200) {
+        await alertSuccess("Status berhasil diperbarui!");
+        fetchAllTransactions();
+      } else {
+        alertError(responseBody.message);
+      }
+    } catch (e) {
+      console.error(e);
+      alertError("Terjadi kesalahan sistem.");
+    }
+  }
+
+  useEffectOnce(() => {
+    fetchAllTransactions();
+  });
 
   return (
     <div className="max-w-6xl mx-auto animate-slide-up px-4 pb-20">
@@ -89,6 +131,23 @@ export default function OrderHistory() {
                         className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border-2 ${getStatusStyle(order.status)}`}>
                         {order.status}
                       </span>
+
+                      {order.status === "pending" && (
+                        <div className="flex justify-center gap-2 mt-2">
+                          <button
+                            onClick={() => handleUpdateStatus(order.order_id, "success")}
+                            className="p-1 bg-green-500 text-white rounded hover:bg-green-600"
+                            title="Konfirmasi Lunas">
+                            <CheckCircle size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleUpdateStatus(order.order_id, "failed")}
+                            className="p-1 bg-red-500 text-white rounded hover:bg-red-600"
+                            title="Batalkan">
+                            <XCircle size={16} />
+                          </button>
+                        </div>
+                      )}
                     </td>
                     <td className="p-4 text-xs text-[#6B5E51] font-medium italic">
                       {new Date(order.createdAt).toLocaleDateString("id-ID", {
@@ -168,6 +227,20 @@ export default function OrderHistory() {
                   Rp {parseInt(order.amount).toLocaleString("id-ID")}
                 </span>
               </div>
+              {order.status === "pending" && (
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={() => handleUpdateStatus(order.order_id, "success")}
+                    className="flex-1 bg-green-500 text-white py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+                    <CheckCircle size={14} /> Terima
+                  </button>
+                  <button
+                    onClick={() => handleUpdateStatus(order.order_id, "failed")}
+                    className="flex-1 bg-red-500 text-white py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+                    <XCircle size={14} /> Tolak
+                  </button>
+                </div>
+              )}
             </div>
           ))
         )}

@@ -1,11 +1,21 @@
 const express = require("express");
 const router = express.Router();
-const { createTransaction, handleNotification, getAllTransactions } = require("../controllers/paymentController");
+const verifyToken = require("../middleware/authMiddleware"); // <--- 1. Import Middleware
 
-// Jalur: POST /api/payment/purchase
-router.post("/purchase", createTransaction);
-router.post("/notification", handleNotification);
-// Tambahkan route ini (sebaiknya beri middleware auth admin nanti)
-router.get("/admin/transactions", getAllTransactions);
+const {
+  createTransaction,
+  handleNotification,
+  getAllTransactions,
+  updateTransactionStatus, // <--- Pastikan ini di-import juga
+} = require("../controllers/paymentController");
+
+// --- PUBLIC ROUTES (Siapapun boleh akses) ---
+router.post("/purchase", createTransaction); // Pembeli mau beli
+router.post("/notification", handleNotification); // Webhook/Notifikasi
+
+// --- ADMIN ROUTES (Hanya Admin yang boleh akses) ---
+// Tambahkan 'verifyToken' sebagai parameter kedua sebelum controller
+router.get("/admin/transactions", verifyToken, getAllTransactions);
+router.put("/admin/transaction/:order_id", verifyToken, updateTransactionStatus);
 
 module.exports = router;
