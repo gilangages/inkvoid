@@ -3,16 +3,21 @@ import { ShoppingBag, User, Mail, Calendar, Tag, XCircle, CheckCircle } from "lu
 import { alertConfirm, alertError, alertSuccess } from "../../../lib/alert";
 import { changeStatusPaymentByAdmin, getAllTransactions } from "../../../lib/api/PaymentApi";
 import { useEffectOnce, useLocalStorage } from "react-use";
+import { useNavigate } from "react-router";
 
 export default function OrderHistory() {
-  const [token, _] = useLocalStorage("token", "");
+  const [_, setToken] = useLocalStorage("token", "");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   async function fetchAllTransactions() {
     setLoading(true);
     try {
-      const response = await getAllTransactions(token);
+      const rawToken = localStorage.getItem("token");
+      let validToken = rawToken ? JSON.parse(rawToken) : "";
+
+      const response = await getAllTransactions(validToken);
       const responseBody = await response.json();
       console.log(responseBody);
 
@@ -47,10 +52,32 @@ export default function OrderHistory() {
       return;
     }
 
+    const rawToken = localStorage.getItem("token");
+    if (!rawToken || rawToken === null || rawToken === "undefined") {
+      await alertError("Sesi anda telah berakhir (Token hilang).");
+      navigate("/admin/login");
+      return;
+    }
+
+    let validToken = rawToken;
     try {
-      const response = await changeStatusPaymentByAdmin(token, { orderId, newStatus });
+      validToken = JSON.parse(rawToken);
+    } catch (e) {
+      console.log(e);
+      validToken = rawToken;
+    }
+
+    try {
+      const response = await changeStatusPaymentByAdmin(validToken, { orderId, newStatus });
       const responseBody = await response.json();
       console.log(responseBody);
+
+      if (response.status === 401 || response.status === 403) {
+        await alertError("Sesi kadaluarsa. Silakan login kembali.");
+        setToken("");
+        navigate("/admin/login");
+        return;
+      }
 
       if (response.status === 200) {
         await alertSuccess("Status berhasil diperbarui!");

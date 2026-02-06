@@ -8,7 +8,7 @@ export const getAllProducts = async () => {
 };
 
 export const getAdminProducts = async (token) => {
-  return await fetch(`${import.meta.env.VITE_APP_PATH}/products`, {
+  return await fetch(`${import.meta.env.VITE_APP_PATH}/products/admin/list`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
