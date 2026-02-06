@@ -1,4 +1,5 @@
-import { Edit, Trash2, Maximize2, Check } from "lucide-react";
+//
+import { Edit, EyeOff, Eye, Trash2, Maximize2, Check } from "lucide-react";
 
 export default function AdminProductCard({
   product,
@@ -7,18 +8,23 @@ export default function AdminProductCard({
   onViewImage,
   isSelected,
   onSelect,
-  isSelectionMode, // Pastikan prop ini diterima
+  isSelectionMode,
+  onToggleStatus,
 }) {
   const formattedPrice = parseInt(product.price).toLocaleString("id-ID");
+  const isActive = product.is_active === 1;
 
   return (
     <div
-      className={`bg-white p-3 rounded-xl border-2 transition-all flex flex-col h-full group relative ${
-        isSelected
-          ? "border-[#8da399] shadow-md ring-2 ring-[#8da399]/20"
-          : "border-[#E5E0D8] shadow-sm hover:shadow-md"
-      }`}>
-      {/* 1. KONDISI RENDER: Checkbox hanya muncul jika isSelectionMode AKTIF */}
+      className={`p-3 rounded-xl border-2 transition-all flex flex-col h-full group relative ${
+        // 1. LOGIC VISUAL:
+        // Jika Active: Putih, Shadow normal.
+        // Jika Draft: Abu-abu (bg-gray-100), Border putus-putus (border-dashed), Opacity agak turun.
+        isActive
+          ? "bg-white border-[#E5E0D8] shadow-sm hover:shadow-md"
+          : "bg-gray-100 border-gray-300 border-dashed opacity-85" // Visual cues "Draft"
+      } ${isSelected ? "!border-[#8da399] !shadow-md !ring-2 !ring-[#8da399]/20 !bg-white !opacity-100" : ""}`}>
+      {/* Checkbox Selection Mode */}
       {isSelectionMode && (
         <div
           onClick={(e) => {
@@ -35,18 +41,18 @@ export default function AdminProductCard({
       )}
 
       {/* AREA GAMBAR */}
-      <div className="relative aspect-square bg-[#F3F0E9] rounded-lg overflow-hidden mb-3 border border-[#E5E0D8] group/image">
+      {/* Jika Draft, gambar jadi hitam putih (grayscale) */}
+      <div
+        className={`relative aspect-square bg-[#F3F0E9] rounded-lg overflow-hidden mb-3 border border-[#E5E0D8] group/image ${!isActive ? "grayscale" : ""}`}>
         <img
           src={product.image_url}
           alt={product.name}
-          // Tambahkan efek opacity jika sedang dipilih
           className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
             isSelected ? "opacity-75" : "opacity-100"
           }`}
           onError={(e) => (e.target.src = "https://placehold.co/400?text=No+Image")}
         />
 
-        {/* 2. PROTEKSI: Tombol Maximize hanya muncul jika TIDAK sedang dalam mode pilihan */}
         {!isSelectionMode && (
           <div
             onClick={() => onViewImage(product)}
@@ -64,28 +70,46 @@ export default function AdminProductCard({
 
       {/* INFO PRODUK */}
       <div className="flex-grow">
-        <h3 className="font-bold text-[#3E362E] text-lg leading-tight mb-1 line-clamp-1" title={product.name}>
+        <h3
+          className={`font-bold text-lg leading-tight mb-1 line-clamp-1 ${isActive ? "text-[#3E362E]" : "text-gray-500"}`}
+          title={product.name}>
           {product.name}
         </h3>
         <p className="text-xs text-[#8C8478] line-clamp-2 mb-3 h-8">{product.description}</p>
       </div>
 
-      {/* 3. PROTEKSI: Action Buttons dibuat transparan/tidak bisa diklik saat mode pilihan aktif */}
+      {/* ACTION BUTTONS */}
       <div
         className={`grid grid-cols-2 gap-2 mt-auto pt-3 border-t border-[#F3F0E9] transition-opacity ${
           isSelectionMode ? "opacity-20 pointer-events-none" : "opacity-100"
         }`}>
+        {/* Tombol Toggle Status */}
+        <button
+          onClick={() => onToggleStatus(product.id)}
+          className={`p-2 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold ${
+            isActive
+              ? "bg-green-100 text-green-700 hover:bg-green-200"
+              : "bg-gray-600 text-white hover:bg-gray-700 shadow-md transform scale-105" // Tombol ini menonjol saat draft
+          }`}
+          title={isActive ? "Nonaktifkan (Sembunyikan)" : "Aktifkan (Tampilkan)"}>
+          {isActive ? <Eye size={16} /> : <EyeOff size={16} />}
+          {isActive ? "Active" : "Publish"}
+        </button>
+
+        {/* Tombol Edit (TETAP AKTIF - Best Practice) */}
         <button
           onClick={() => onEdit(product)}
           className="flex items-center justify-center gap-1 py-2 text-sm font-bold text-[#3E362E] bg-[#F3F0E9] rounded hover:bg-[#E5E0D8] transition-colors">
           <Edit size={16} /> Edit
         </button>
+
+        {/* Tombol Delete (TETAP AKTIF) */}
         <button
           onClick={(e) => {
             e.stopPropagation();
             onDelete(product.id);
           }}
-          className="flex items-center justify-center gap-1 py-2 text-sm font-bold text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors">
+          className="col-span-2 flex items-center justify-center gap-1 py-2 text-sm font-bold text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors">
           <Trash2 size={16} /> Hapus
         </button>
       </div>

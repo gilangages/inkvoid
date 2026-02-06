@@ -108,7 +108,7 @@ const deleteFile = async (fileUrl) => {
 // 1. Get All Products
 const getAllProducts = async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT * FROM products WHERE is_deleted = 0 ORDER BY id DESC");
+    const [rows] = await db.query("SELECT * FROM products WHERE is_deleted = 0 AND is_active = 1 ORDER BY id DESC");
     const baseUrl = getBaseUrl(req);
 
     const products = rows.map((product) => {
@@ -156,6 +156,56 @@ const getAllProducts = async (req, res) => {
     });
 
     res.status(200).json({ success: true, message: "List Data Produk", data: products });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 1.1 Get Admin Products (PROTECTED - Tampilkan SEMUA)
+const getAdminProducts = async (req, res) => {
+  try {
+    // Tampilkan semua yg belum dihapus (termasuk is_active = 0)
+    const [rows] = await db.query("SELECT * FROM products WHERE is_deleted = 0 ORDER BY id DESC");
+    const baseUrl = getBaseUrl(req);
+
+    // Reuse logic mapping images (Cleanest way without creating new function to avoid changing var names globally)
+    const products = rows.map((product) => {
+      let images = [];
+      if (typeof product.images === "string") {
+        images = safeParseJSON(product.images, []);
+      } else if (Array.isArray(product.images)) {
+        images = product.images;
+      } else if (product.image_url) {
+        images = [product.image_url];
+      }
+      if (!Array.isArray(images)) images = [];
+
+      const normalizedImages = images.map((img) => {
+        let rawUrl = typeof img === "string" ? img : img.url;
+        let finalUrl = rawUrl;
+        if (typeof rawUrl === "string") {
+          if (rawUrl.startsWith("http")) {
+            finalUrl = rawUrl;
+          } else {
+            let cleanPath = rawUrl;
+            if (!cleanPath.includes("uploads")) cleanPath = `/uploads/${cleanPath.replace(/^\/+/, "")}`;
+            if (!cleanPath.startsWith("/")) cleanPath = `/${cleanPath}`;
+            finalUrl = `${baseUrl}${cleanPath}`;
+          }
+        }
+        return typeof img === "string" ? { url: finalUrl, label: "Product Image" } : { ...img, url: finalUrl };
+      });
+      const validImages = normalizedImages.filter((img) => img.url);
+
+      return {
+        ...product,
+        images: validImages,
+        image_url: validImages.length > 0 ? validImages[0].url : "https://placehold.co/600x400?text=No+Image",
+      };
+    });
+
+    res.status(200).json({ success: true, message: "List Semua Produk (Admin)", data: products });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: error.message });
@@ -414,4 +464,36 @@ const bulkDeleteProducts = async (req, res) => {
   }
 };
 
-module.exports = { getAllProducts, createProduct, deleteProduct, updateProduct, bulkDeleteProducts };
+// 6. Toggle Product Status (Active/Inactive)
+const toggleProductStatus = async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Cek status saat ini
+    const [rows] = await db.query("SELECT is_active FROM products WHERE id = ?", [id]);
+    if (rows.length === 0) return res.status(404).json({ success: false, message: "Produk tidak ditemukan" });
+
+    const currentStatus = rows[0].is_active;
+    const newStatus = currentStatus === 1 ? 0 : 1; // Toggle logic
+
+    await db.query("UPDATE products SET is_active = ? WHERE id = ?", [newStatus, id]);
+
+    res.status(200).json({
+      success: true,
+      message: `Produk berhasil ${newStatus === 1 ? "diaktifkan" : "dinonaktifkan"}.`,
+      data: { id, is_active: newStatus },
+    });
+  } catch (error) {
+    console.error("Toggle status error:", error);
+    res.status(500).json({ success: false, message: "Gagal mengubah status produk" });
+  }
+};
+
+module.exports = {
+  getAllProducts,
+  getAdminProducts,
+  createProduct,
+  deleteProduct,
+  updateProduct,
+  bulkDeleteProducts,
+  toggleProductStatus,
+};

@@ -7,6 +7,26 @@ export const getAllProducts = async () => {
   });
 };
 
+export const getAdminProducts = async (token) => {
+  return await fetch(`${import.meta.env.VITE_APP_PATH}/products`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+  });
+};
+
+export const toggleProductStatus = async (token, id) => {
+  return await fetch(`${import.meta.env.VITE_APP_PATH}/products/${id}/status`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+  });
+};
+
 export const createProduct = async (token, formData) => {
   return await fetch(`${import.meta.env.VITE_APP_PATH}/products`, {
     method: "POST",

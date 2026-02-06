@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { bulkDeleteProducts, getAllProducts, productDelete } from "../../../lib/api/ProductApi";
+import { bulkDeleteProducts, getAdminProducts, productDelete, toggleProductStatus } from "../../../lib/api/ProductApi";
 import { Trash2, CheckSquare, Square, RefreshCw, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { alertConfirm, alertError, alertSuccess } from "../../../lib/alert";
 import AdminProductCard from "../Card/AdminProductCard";
@@ -54,7 +54,10 @@ export default function ProductList() {
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const response = await getAllProducts();
+      const rawToken = localStorage.getItem("token");
+      let validToken = rawToken ? JSON.parse(rawToken) : "";
+
+      const response = await getAdminProducts(validToken);
       const res = await response.json();
       if (res.success) setProducts(res.data);
       else setProducts([]);
@@ -63,6 +66,27 @@ export default function ProductList() {
       alertError("Gagal mengambil data produk");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // NEW: Handler Toggle
+  const handleToggleStatus = async (id) => {
+    const rawToken = localStorage.getItem("token");
+    let validToken = rawToken ? JSON.parse(rawToken) : "";
+
+    try {
+      const response = await toggleProductStatus(validToken, id);
+      const res = await response.json();
+      if (response.ok) {
+        await alertSuccess(res.message);
+        // Update state lokal langsung agar UI responsif tanpa reload
+        setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, is_active: p.is_active === 1 ? 0 : 1 } : p)));
+      } else {
+        alertError(res.message);
+      }
+    } catch (e) {
+      console.error(e);
+      alertError("Gagal mengubah status");
     }
   };
 
@@ -260,6 +284,7 @@ export default function ProductList() {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onViewImage={handleViewImage}
+              onToggleStatus={handleToggleStatus}
             />
           ))}
         </div>

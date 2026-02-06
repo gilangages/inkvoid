@@ -61,6 +61,11 @@
               "filename1.png",
               "filename2.png"
             ]
+          },
+          "is_active": {
+            "type": "integer",
+            "example": 1,
+            "description": "1 = Active/Published, 0 = Inactive/Draft"
           }
         }
       },
@@ -246,6 +251,53 @@
           },
           "403": {
             "description": "Forbidden (Token Invalid)"
+          }
+        }
+      }
+    },
+    "/products/admin/list": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Ambil Semua Produk (Admin Dashboard)",
+        "description": "Menampilkan produk aktif DAN non-aktif (draft).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List Semua Produk"
+          }
+        }
+      }
+    },
+    "/products/{id}/status": {
+      "patch": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Toggle Status Produk (Active/Inactive)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Berhasil Diubah"
           }
         }
       }
