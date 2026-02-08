@@ -1,6 +1,7 @@
 import { X, Lock, ChevronLeft, ChevronRight, Image as ImageIcon, Mail, Check, MessageCircle } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
+import ReactMarkdown from "react-markdown";
 
 export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
   // --- STATE BARU: Email ---
@@ -105,6 +106,17 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
     onSubmit({ ...product, buyerEmail: email });
   };
 
+  const markdownComponents = {
+    // eslint-disable-next-line no-unused-vars
+    strong: ({ node, ...props }) => <span className="font-black text-[#3E362E]" {...props} />,
+    // eslint-disable-next-line no-unused-vars
+    ul: ({ node, ...props }) => <ul className="list-disc pl-4 space-y-1 my-2" {...props} />,
+    // eslint-disable-next-line no-unused-vars
+    li: ({ node, ...props }) => <li className="pl-1" {...props} />,
+    // eslint-disable-next-line no-unused-vars
+    p: ({ node, ...props }) => <p className="mb-3 italic" {...props} />,
+  };
+
   return (
     <>
       <div className="fixed inset-0 z-51 flex items-end md:items-center justify-center bg-[#3E362E]/60 backdrop-blur-sm p-0 md:p-4 animate-fadeIn">
@@ -192,9 +204,11 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
 
               <div className="relative">
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#3E362E]/10 rounded-full" />
-                <p className="pl-5 text-sm md:text-base text-[#6B5E51] leading-relaxed italic font-medium whitespace-pre-line">
-                  "{product.description || "Koleksi aset digital eksklusif untuk kebutuhan kreatifmu."}"
-                </p>
+                <div className="pl-5 text-sm md:text-base text-[#6B5E51] leading-relaxed italic font-medium">
+                  <ReactMarkdown components={markdownComponents}>
+                    {product.description || "Koleksi aset digital eksklusif untuk kebutuhan kreatifmu."}
+                  </ReactMarkdown>
+                </div>
               </div>
             </div>
 

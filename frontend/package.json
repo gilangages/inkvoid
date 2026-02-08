@@ -17,6 +17,7 @@
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-markdown": "^10.1.0",
     "react-router": "^7.13.0",
     "react-textarea-autosize": "^8.5.9",
     "react-use": "^17.6.0",

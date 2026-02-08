@@ -232,14 +232,24 @@ export default function ProductForm() {
             </div>
 
             <div>
-              <label className="text-sm font-bold text-[#3e362e]">Deskripsi</label>
+              <label className="text-sm font-bold text-[#3e362e] flex justify-between items-center">
+                Deskripsi
+                <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                  Support Markdown: **tebal**, - list
+                </span>
+              </label>
               <TextAreaAutosize
-                minRows={4}
+                minRows={6} // Bikin lebih tinggi biar enak ngetik panjang
                 required
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full border-2 border-[#e5e0d8] rounded-lg p-3 mt-1 focus:border-[#8da399] outline-none resize-none transition-all"
-                placeholder="Jelaskan detail stiker..."
+                className="w-full border-2 border-[#e5e0d8] rounded-lg p-3 mt-1 focus:border-[#8da399] outline-none resize-none transition-all font-mono text-sm"
+                placeholder={`Jelaskan detail stiker...
+
+Tips Menulis:
+- Gunakan tanda minus (-) untuk bikin list
+- Gunakan bintang dua (**teks**) untuk **tebal**
+- Tekan Enter 2x untuk paragraf baru`}
               />
             </div>
           </div>

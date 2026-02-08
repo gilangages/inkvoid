@@ -8,33 +8,33 @@ export const FAQ = () => {
 
   const faqs = [
     {
-      question: "Apakah stiker ini hanya untuk GoodNotes?",
+      question: "Apakah produk ini kompatibel dengan aplikasi selain GoodNotes?",
       answer:
-        "Tidak dong! Kamu akan mendapatkan file format .PNG (transparan) yang fleksibel. Jadi bisa dipakai di aplikasi jurnal lain (Notability, Samsung Notes), Notion, atau bahkan hiasan Instagram Story.",
+        "Ya. File disajikan dalam format .PNG transparan yang bersifat universal. Anda dapat menggunakannya pada berbagai aplikasi pencatat digital (seperti Notability, Samsung Notes, Notion) maupun untuk kebutuhan desain lainnya.",
     },
     {
-      question: "Bagaimana kualitas gambarnya? Pecah tidak?",
+      question: "Bagaimana dengan kualitas dan resolusi gambar?",
       answer:
-        "Tenang saja. Yang kamu lihat di website adalah versi preview (supaya loading cepat). File asli yang kamu terima beresolusi tinggi (High Quality / 300 DPI) sehingga sangat tajam dan tidak pecah.",
+        "Gambar yang ditampilkan pada situs web merupakan versi pratinjau untuk optimalisasi kinerja. File asli yang Anda terima memiliki resolusi tinggi (High Quality / 300 DPI) guna menjamin ketajaman visual saat digunakan secara digital maupun dicetak.",
     },
     {
-      question: "Apakah boleh dicetak fisik?",
+      question: "Apakah file diizinkan untuk dicetak secara fisik?",
       answer:
-        "Boleh banget! Karena ini file digital, kamu bebas mencetaknya berulang kali (unlimited) untuk ditempel di buku atau dekorasi kamar. Kalau rusak, tinggal print lagi!",
+        "Tentu. Lisensi produk mencakup Penggunaan Pribadi (Personal Use), sehingga Anda diperkenankan mencetak file ini tanpa batasan jumlah untuk kebutuhan dekorasi atau dokumentasi pribadi.",
     },
     {
-      question: "Cara downloadnya bagaimana?",
+      question: "Bagaimana prosedur pengiriman file setelah pembelian?",
       answer:
-        "Setelah konfirmasi pembayaran, admin akan mengirimkan link akses Google Drive pribadi ke WhatsApp kamu. Tinggal klik dan download sepuasnya.",
+        "Setelah pembayaran terkonfirmasi, tautan akses unduhan (Google Drive) akan dikirimkan secara langsung melalui WhatsApp ke nomor yang terdaftar.",
     },
   ];
 
   return (
     <section id="faq" className="py-24 px-6 max-w-3xl mx-auto">
       <div className="text-center mb-16">
-        <span className="text-[#8DA399] font-bold text-sm tracking-widest uppercase mb-2 block">Pojok Tanya</span>
-        <h2 className="text-3xl md:text-4xl font-black text-[#3E362E] mb-6">Sering Ditanyakan</h2>
-        <p className="text-[#6B5E51]">Jawaban cepat untuk rasa penasaranmu.</p>
+        <span className="text-[#8DA399] font-bold text-sm tracking-widest uppercase mb-2 block">Pusat Bantuan</span>
+        <h2 className="text-3xl md:text-4xl font-black text-[#3E362E] mb-6">Pertanyaan Umum</h2>
+        <p className="text-[#6B5E51]">Informasi lengkap mengenai produk dan layanan kami.</p>
       </div>
 
       <div className="space-y-4">
