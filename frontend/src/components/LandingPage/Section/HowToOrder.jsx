@@ -40,7 +40,7 @@ export const HowToOrder = () => {
           </p>
           <div className="inline-flex items-center gap-2 bg-[#FDFCF8] border border-[#E5E0D8] px-3 py-2 rounded-lg text-xs font-medium text-[#6B5E51] shadow-sm">
             <span className="text-base">🕒</span>
-            <span>Jam Operasional: 07:00 - 20:00 WIB</span>
+            <span>Jam Operasional: 07:00 - 22:00 WIB</span>
           </div>
           <p className="text-xs text-[#8C8478] italic leading-relaxed">
             *Pesan yang masuk di luar jam operasional akan diproses pada hari berikutnya.
