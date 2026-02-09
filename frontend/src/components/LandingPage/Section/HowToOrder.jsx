@@ -35,8 +35,8 @@ export const HowToOrder = () => {
       description: (
         <div className="space-y-3">
           <p>
-            Setelah pembayaran berhasil, mohon klik tombol <b>'Bungkus via WhatsApp'</b> pada halaman produk untuk
-            memverifikasi bukti transfer dengan Admin.
+            Setelah pembayaran berhasil, kembali ke tampilan detail produk dan klik tombol <b>'Bungkus via WhatsApp'</b>{" "}
+            untuk mengirim bukti transfer ke Admin.
           </p>
           <div className="inline-flex items-center gap-2 bg-[#FDFCF8] border border-[#E5E0D8] px-3 py-2 rounded-lg text-xs font-medium text-[#6B5E51] shadow-sm">
             <span className="text-base">🕒</span>
