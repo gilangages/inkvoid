@@ -28,7 +28,9 @@ describe("Admin Auth & Security", () => {
 
   // 1. Test Login Gagal
   it("should reject invalid credentials", async () => {
-    const res = await request(app).post("/api/admin/login").send({ email: "salah@gmail.com", password: "ngawur" });
+    const res = await request(app)
+      .post("/api/admin/login")
+      .send({ email: process.env.ADMIN_EMAIL, password: "ngawur" });
 
     expect(res.statusCode).toEqual(401);
     expect(res.body.success).toBe(false);
@@ -38,7 +40,7 @@ describe("Admin Auth & Security", () => {
   it("should login successfully with correct credentials", async () => {
     const res = await request(app)
       .post("/api/admin/login")
-      .send({ email: "qbdian@gmail.com", password: "QbdianQ2121" }); // Sesuai hardcode
+      .send({ email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASS }); // Sesuai hardcode
 
     expect(res.statusCode).toEqual(200);
     expect(res.body).toHaveProperty("token");

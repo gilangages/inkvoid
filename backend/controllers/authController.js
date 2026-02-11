@@ -1,8 +1,8 @@
 const jwt = require("jsonwebtoken");
 
 // LOGIC HARDCODE ADMIN
-const ADMIN_EMAIL = "qbdian@gmail.com";
-const ADMIN_PASS = "QbdianQ2121";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASS = process.env.ADMIN_PASS;
 
 exports.loginAdmin = (req, res) => {
   const { email, password } = req.body;
