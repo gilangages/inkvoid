@@ -51,22 +51,22 @@ export const Hero = () => {
         </span>
 
         <h1 className="text-4xl md:text-6xl font-black text-[#3E362E] mb-6 leading-tight tracking-tight">
-          Stiker Lucu-Lucuan Buatan <br />
+          Stiker Abstrak Buatan <br />
           <span className="text-[#8DA399] underline decoration-[#D68C76] decoration-wavy decoration-4 underline-offset-4">
             Sendiri.
           </span>
         </h1>
 
         <p className="text-lg md:text-xl text-[#6B5E51] mb-10 max-w-xl mx-auto leading-relaxed font-medium">
-          Hai! Aku hobi gambar stiker. Di sini kamu cukup <b>beli sekali</b>, dapat file digital (ZIP) yang bisa kamu{" "}
-          <b>print sepuasnya</b> seumur hidup! Isinya sudah ada format A4 siap cetak & PNG transparan.
+          Jika membeli maka akan dapat file digital (ZIP) yang bisa di<b>print sepuasnya</b>. Isinya sudah ada format A4
+          siap cetak & PNG transparan.
         </p>
 
         <div className="flex flex-col sm:flex-row justify-center gap-4">
           <button
             onClick={() => scrollToSection("products")}
             className="bg-[#3E362E] text-[#FDFCF8] px-8 py-3.5 rounded-xl font-black tracking-wide hover:bg-[#8DA399] hover:-translate-y-0.5 transition-all shadow-[4px_4px_0px_0px_rgba(141,163,153,1)] border-2 border-[#3E362E] active:translate-y-0 active:shadow-none cursor-pointer">
-            Lihat Karyaku 👇
+            Lihat Abstrak
           </button>
         </div>
       </div>

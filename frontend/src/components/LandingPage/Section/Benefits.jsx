@@ -5,7 +5,7 @@ export const Benefits = () => {
     {
       title: "Desain Orisinil & Unik",
       description:
-        "Setiap goresan dibuat manual (hand-drawn), memberikan sentuhan personal yang hangat dan tidak pasaran.",
+        "Setiap goresan dibuat manual (hand-drawn), memberikan sentuhan abstrak yang hangat dan tidak pasaran.",
       icon: <Star className="text-[#FDFCF8]" size={24} />,
     },
     {

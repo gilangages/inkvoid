@@ -34,10 +34,7 @@ export const Footer = () => {
             <h3 className="font-black text-2xl text-[#3E362E]">
               Luma<span className="text-[#8DA399]">Sticker</span>.
             </h3>
-            <p className="text-[#6B5E51] text-sm mt-3 leading-relaxed max-w-sm">
-              Menyediakan stiker digital berkualitas tinggi (High-Res) yang siap cetak untuk kebutuhan jurnal, dekorasi,
-              dan koleksi pribadimu.
-            </p>
+            <p className="text-[#6B5E51] text-sm mt-3 leading-relaxed max-w-sm">Sticker abstrak.</p>
           </div>
         </div>
 
@@ -107,7 +104,7 @@ export const Footer = () => {
       {/* COPYRIGHT BAR */}
       <div className="max-w-6xl mx-auto px-6 mt-12 pt-8 border-t border-[#D6CEC3] flex flex-col md:flex-row justify-between items-center text-xs text-[#8C8478] font-medium">
         <p>&copy; {new Date().getFullYear()} LumaSticker. All rights reserved.</p>
-        <p className="mt-2 md:mt-0">Created with ♥️ in Indonesia.</p>
+        <p className="mt-2 md:mt-0">Dibuat di depan laptop.</p>
       </div>
     </footer>
   );
