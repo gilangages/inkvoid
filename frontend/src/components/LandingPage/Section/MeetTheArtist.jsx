@@ -26,7 +26,7 @@ export const MeetTheArtist = () => {
             <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-noise z-10"></div>
 
             <img
-              src="https://i.pinimg.com/originals/60/24/7b/60247b6a7f2b1e2e6b832eaee550cc05.gif"
+              src="./me-ghilbi.gif"
               alt="Artist"
               className="w-full h-full object-cover opacity-95 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000 ease-in-out"
             />
