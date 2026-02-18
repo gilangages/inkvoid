@@ -19,6 +19,7 @@ import { MeetTheArtist } from "./Section/MeetTheArtist";
 import { FloatingWhatsAppButton } from "./FloatingWhatsAppButton";
 // Import Loading Screen Baru
 import { LoadingScreen } from "./LoadingScreen";
+import { visitStats } from "../../lib/api/VisitApi";
 
 export const HomePage = () => {
   const [products, setProducts] = useState([]);
@@ -97,6 +98,31 @@ export const HomePage = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    // Fungsi untuk mencatat kunjungan
+    async function recordVisit() {
+      try {
+        const response = await visitStats();
+
+        // Cek dulu apakah sukses (status 200-299)
+        if (response.ok) {
+          // Kalau sukses, baru kita baca JSON-nya (opsional, karena kita cuma butuh catat)
+          // const data = await response.json();
+          // console.log("Visit recorded:", data);
+        } else {
+          // Jika server merespon error (misal 500 atau 404), diamkan saja (Silent Fail)
+          // console.warn("Gagal mencatat visit:", response.status);
+        }
+      } catch (error) {
+        console.error(error);
+        // Jika internet mati atau server down total
+        // Biarkan kosong agar user tidak terganggu
+      }
+    }
+
+    recordVisit();
+  }, []); // Array kosong [] artinya hanya jalan 1x saat website dibuka
 
   // Handler tombol "Lanjut"
   const handleContinueAnyway = () => {

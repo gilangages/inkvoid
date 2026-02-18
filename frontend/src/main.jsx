@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import { HomePage } from "./components/LandingPage/HomePage.jsx";
-import { BrowserRouter, Route, Routes } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import AdminLogin from "./components/Admin/AdminLogin.jsx";
 import LayoutAdmin from "./components/Admin/LayoutAdmin/LayoutAdmin.jsx";
 import AdminLogout from "./components/Admin/AdminLogout.jsx";
@@ -14,6 +14,7 @@ import NotFound from "./components/NotFound.jsx";
 import OrderHistory from "./components/Admin/Pages/OrderHistory.jsx";
 import TermsAndConditions from "./components/LandingPage/TermsAndConditions.jsx";
 import PrivacyPolicy from "./components/LandingPage/PrivacyPolicy.jsx";
+import GuestRoute from "./components/GuestRoute.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -21,11 +22,22 @@ createRoot(document.getElementById("root")).render(
       <Routes>
         {/* public route */}
         <Route path="/" element={<HomePage />} />
-        <Route path="admin/login" element={<AdminLogin />} />
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
 
-        {/* Rute Admin yang Diproteksi */}
+        {/* Redirect Route */}
+        {/* jika user akses /login otomatis ke /admin/login */}
+        {/* Prop 'replace' agar history browser tidak numpuk (user ga bisa back ke /login) */}
+        <Route path="/login" element={<Navigate to="/admin/login" replace />} />
+
+        {/* --- GUEST ROUTE --- */}
+        {/* Hanya bisa diakses jika BELUM login. Kalau sudah login, mental ke dashboard */}
+        <Route element={<GuestRoute />}>
+          <Route path="admin/login" element={<AdminLogin />} />
+        </Route>
+
+        {/* --- PROTECTED ROUTE --- */}
+        {/* Hanya bisa diakses jika SUDAH login. Kalau belum, mental ke login */}
         <Route element={<ProtectedRoute />}>
           <Route path="/admin" element={<LayoutAdmin />}>
             {/* Index route otomatis ke dashboard */}
