@@ -39,11 +39,11 @@ export const MeetTheArtist = () => {
           <div className="absolute -bottom-3 left-8 w-24 h-6 bg-[#121214]/60 backdrop-blur-md -rotate-2 border border-[#8287ac]/10 group-hover:bg-[#8287ac]/10 transition-colors duration-500"></div>
 
           {/* Badge Nama Artist (Opsional untuk mempertegas identitas) */}
-          <div className="absolute bottom-6 right-6 z-20">
+          {/* <div className="absolute bottom-6 right-6 z-20">
             <span className="text-[10px] font-mono tracking-[0.4em] text-[#E0D7D7] opacity-40 bg-[#121214]/80 px-2 py-1 uppercase">
               Q
             </span>
-          </div>
+          </div> */}
         </div>
       </div>
     </section>
