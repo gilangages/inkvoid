@@ -104,6 +104,10 @@
     {
       "name": "Payment",
       "description": "Integrasi Midtrans"
+    },
+    {
+      "name": "Visits",
+      "description": "Statistik Pengunjung Website"
     }
   ],
   "paths": {
@@ -561,6 +565,88 @@
           },
           "404": {
             "description": "Order ID tidak ditemukan"
+          }
+        }
+      }
+    },
+    "/visit": {
+      "post": {
+        "tags": [
+          "Visits"
+        ],
+        "summary": "Catat Kunjungan Baru (Public)",
+        "description": "Mencatat IP address dan User Agent pengunjung secara otomatis saat membuka homepage.",
+        "responses": {
+          "200": {
+            "description": "Kunjungan berhasil dicatat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Visit recorded"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server Error"
+          }
+        }
+      }
+    },
+    "/visit/stats": {
+      "get": {
+        "tags": [
+          "Visits"
+        ],
+        "summary": "Ambil Statistik Pengunjung (Admin)",
+        "description": "Mengambil total views dan unique visitors untuk ditampilkan di Dashboard Admin.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistik berhasil diambil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "total_views": {
+                          "type": "integer",
+                          "example": 150
+                        },
+                        "unique_visitors": {
+                          "type": "integer",
+                          "example": 120
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server Error"
           }
         }
       }

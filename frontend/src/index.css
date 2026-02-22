@@ -15,18 +15,35 @@ body {
   background-image: radial-gradient(#1f1f23 1px, transparent 1px);
   background-size: 30px 30px;
 }
+
+/* Mengatur ukuran dasar scrollbar agar lebih tipis seperti di HP */
+::-webkit-scrollbar {
+  width: 6px; /* Lebar untuk scroll vertikal */
+  height: 6px; /* Tinggi untuk scroll horizontal */
+}
+
 /* Custom Scrollbar yang lebih gelap */
 ::-webkit-scrollbar-track {
   background: #121010;
+  border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
   background: var(--accent-ink);
-  border-radius: 4px;
+  border-radius: 8px; /* Dibuat lebih bulat agar terasa modern/seperti HP */
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-maroon);
+  /* Catatan: var(--primary-maroon) belum ada di :root kamu, jadi saya ganti ke warna senada yang lebih terang sedikit */
+  background: #3e3636;
+}
+
+/* Khusus untuk area dalam Modal agar scrollbar-nya lebih tipis lagi dan tidak mengganggu konten */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent; /* Membuat track transparan agar menyatu dengan background void */
 }
 
 /* Animasi Modal */
