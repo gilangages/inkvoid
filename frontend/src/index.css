@@ -95,3 +95,16 @@ body {
 .animate-float-fast {
   animation: float 4s ease-in-out infinite;
 }
+
+/* Sembunyikan kursor asli HANYA pada area pendaratan (bukan admin) */
+@media (hover: hover) and (pointer: fine) {
+  .custom-cursor-area,
+  .custom-cursor-area a,
+  .custom-cursor-area button,
+  .custom-cursor-area input,
+  .custom-cursor-area select,
+  .custom-cursor-area textarea,
+  .custom-cursor-area [role="button"] {
+    cursor: none !important;
+  }
+}

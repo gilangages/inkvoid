@@ -20,6 +20,7 @@ import { FloatingWhatsAppButton } from "./FloatingWhatsAppButton";
 // Import Loading Screen Baru
 import { LoadingScreen } from "./LoadingScreen";
 import { visitStats } from "../../lib/api/VisitApi";
+import GraphiteCursor from "../GraphiteCursor";
 
 export const HomePage = () => {
   const [products, setProducts] = useState([]);
@@ -145,7 +146,9 @@ export const HomePage = () => {
 
       {/* KONTEN UTAMA WEBSITE */}
       {/* Kita sembunyikan konten utama jika LoadingScreen sedang aktif agar rapi */}
-      <div className={`min-h-screen flex flex-col font-sans ${isInitialLoading || showErrorScreen ? "hidden" : ""}`}>
+      <div
+        className={`min-h-screen flex flex-col font-sans custom-cursor-area ${isInitialLoading || showErrorScreen ? "hidden" : ""}`}>
+        <GraphiteCursor />
         <Navbar />
         <div className="flex-grow">
           <Hero />
