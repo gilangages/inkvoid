@@ -30,9 +30,6 @@ export const Footer = () => {
             <h3 className="font-black text-3xl text-[#E0D7D7] tracking-tighter">
               Ink<span className="text-[#8287ac]">Void</span>.
             </h3>
-            <p className="text-[#B8B3B6] text-sm mt-3 leading-relaxed max-w-sm font-light italic opacity-70">
-              Ruang coretan tanpa rencana. Hanya sekadar visualisasi dari apa yang ada di kepala.
-            </p>
           </div>
         </div>
 

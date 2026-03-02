@@ -8,6 +8,7 @@ import {
   Check,
   MessageCircle,
   AlertCircle,
+  Coffee,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
@@ -350,15 +351,31 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
                     </span>
                   </div>
 
-                  <button
-                    type="submit"
-                    className="w-full border border-[#25D366]/40 text-[#E0D7D7] font-bold py-4 hover:bg-[#25D366]/10 transition-all flex justify-center items-center gap-3 uppercase tracking-[0.2em] text-[11px] group">
-                    <MessageCircle
-                      size={18}
-                      className={`text-[#25D366] ${isAgreed && email ? "group-hover:-rotate-12 transition-transform" : "opacity-40"}`}
-                    />
-                    Konfirmasi via WhatsApp
-                  </button>
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* TOMBOL TRAKTEER */}
+                    <a
+                      href={product.trakteer_link || "https://trakteer.id/inkvoid/shop/lumas-daily-life-vol-1-buwG2"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full border border-[#be1e2d]/40 text-[#E0D7D7] font-bold py-3.5 hover:bg-[#be1e2d]/10 transition-all flex justify-center items-center gap-2 uppercase tracking-[0.1em] text-[10px] md:text-[11px] group px-2">
+                      <Coffee
+                        size={16}
+                        className="text-[#be1e2d] group-hover:scale-110 transition-transform shrink-0"
+                      />
+                      <span className="truncate">Via Trakteer</span>
+                    </a>
+
+                    {/* TOMBOL WHATSAPP */}
+                    <button
+                      type="submit"
+                      className="w-full border border-[#25D366]/40 text-[#E0D7D7] font-bold py-3.5 hover:bg-[#25D366]/10 transition-all flex justify-center items-center gap-2 uppercase tracking-[0.1em] text-[10px] md:text-[11px] group px-2">
+                      <MessageCircle
+                        size={16}
+                        className={`text-[#25D366] shrink-0 ${isAgreed && email ? "group-hover:-rotate-12 transition-transform" : "opacity-40"}`}
+                      />
+                      <span className="truncate">Via WhatsApp</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </form>
