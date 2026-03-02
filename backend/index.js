@@ -17,7 +17,7 @@ const authRoutes = require("./routes/authRoutes");
 // Izinkan Localhost DAN Domain Vercel kamu nanti
 const allowedOrigins = [
   "http://localhost:5173", // Untuk development lokal
-  "https://lumasticker.vercel.app", // GANTI dengan domain asli Vercel kamu nanti
+  "https://inkvoid.vercel.app", // GANTI dengan domain asli Vercel kamu nanti
 ];
 
 app.use(
