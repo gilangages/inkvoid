@@ -146,7 +146,7 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
   return (
     <>
       {/* Backdrop: Dark Void Style */}
-      <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-[#121214]/90 backdrop-blur-md p-0 md:p-4 animate-fadeIn">
+      <div className="fixed inset-0 z-51 flex items-end md:items-center justify-center bg-[#121214]/90 backdrop-blur-md p-0 md:p-4 animate-fadeIn">
         {/* Container Modal Utama: Sharp Corners & Dark Theme */}
         <div className="bg-[#121214] w-full md:max-w-4xl rounded-none md:rounded-none shadow-2xl overflow-hidden flex flex-col md:flex-row h-[85vh] md:h-[640px] relative border border-[#8287ac]/20">
           {/* Close Button: Minimalist Sharp */}
