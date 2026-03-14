@@ -24,11 +24,7 @@ export const Navbar = () => {
       const element = document.getElementById(id);
       if (element) element.scrollIntoView({ behavior: "smooth" });
     } else {
-      navigate("/");
-      setTimeout(() => {
-        const element = document.getElementById(id);
-        if (element) element.scrollIntoView({ behavior: "smooth" });
-      }, 100);
+      navigate("/", { state: { targetId: id } });
     }
   };
 

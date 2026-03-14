@@ -7,17 +7,13 @@ export const Footer = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Logic navigasi tetap dipertahankan sesuai permintaan
+  // Navigation logic uses router state to scroll after LoadingScreen completes on HomePage
   const handleNavigation = (id) => {
     if (location.pathname === "/") {
       const element = document.getElementById(id);
       if (element) element.scrollIntoView({ behavior: "smooth" });
     } else {
-      navigate("/");
-      setTimeout(() => {
-        const element = document.getElementById(id);
-        if (element) element.scrollIntoView({ behavior: "smooth" });
-      }, 100);
+      navigate("/", { state: { targetId: id } });
     }
   };
 

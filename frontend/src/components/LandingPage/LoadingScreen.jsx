@@ -1,8 +1,46 @@
 // frontend/src/components/LandingPage/LoadingScreen.jsx
-import React from "react";
-import { Loader2, AlertCircle, RefreshCw, ArrowRight } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { AlertCircle, RefreshCw, ArrowRight } from "lucide-react";
 
-export const LoadingScreen = ({ isLoading, isError, onContinue, onRetry }) => {
+export const LoadingScreen = ({ isLoading, isError, fetchComplete, onComplete, onContinue, onRetry }) => {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (!isLoading) return;
+
+    let interval;
+
+    if (!fetchComplete) {
+      // Simulate loading progress from 0 to 90
+      interval = setInterval(() => {
+        setProgress((prev) => {
+          // Slows down as it gets closer to 90
+          const increment = prev < 50 ? Math.random() * 5 + 2 : prev < 80 ? Math.random() * 2 + 1 : Math.random() * 0.5;
+          const next = prev + increment;
+          return next > 92 ? 92 : next;
+        });
+      }, 500);
+    } else {
+      // Fetch is complete, smooth transition to 100%
+      interval = setInterval(() => {
+        setProgress((prev) => {
+          const next = prev + (100 - prev) * 0.15 + 1.5; // Smoothly approach 100
+
+          if (next >= 100) {
+            clearInterval(interval);
+            setTimeout(() => {
+              if (onComplete) onComplete();
+            }, 300); // Give a little time for the user to see 100% before firing complete
+            return 100;
+          }
+          return next;
+        });
+      }, 50); // fast 50ms interval to look smooth
+    }
+
+    return () => clearInterval(interval);
+  }, [isLoading, fetchComplete, onComplete]);
+
   if (!isLoading && !isError) return null;
 
   return (
@@ -19,13 +57,42 @@ export const LoadingScreen = ({ isLoading, isError, onContinue, onRetry }) => {
         {isLoading ? (
           // --- TAMPILAN LOADING ---
           <div className="flex flex-col items-center">
-            <div className="mb-8">
-              <Loader2 size={48} className="text-[#8287ac] animate-spin opacity-50" />
+            {/* Dynamic Circular Progress */}
+            <div className="relative mb-8 w-24 h-24 flex items-center justify-center">
+              <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="transparent"
+                  stroke="#1F1F23"
+                  strokeWidth="4"
+                  className="opacity-50"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="transparent"
+                  stroke="#8287ac"
+                  strokeWidth="4"
+                  strokeDasharray="283"
+                  strokeDashoffset={283 - (283 * progress) / 100}
+                  className="transition-all duration-300 ease-out"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[#8287ac] font-mono font-bold text-xl tracking-tighter">
+                  {Math.floor(progress)}<span className="text-sm">%</span>
+                </span>
+              </div>
             </div>
-            <h2 className="text-xl font-bold tracking-widest uppercase mb-4">Menghubungkan...</h2>
+
+            <h2 className="text-xl font-bold tracking-widest uppercase mb-4 text-[#8287ac]">
+              {progress === 100 ? "Menyiapkan Arsip..." : "Membangunkan Server..."}
+            </h2>
             <p className="text-xs text-[#B8B3B6] font-mono leading-relaxed opacity-60">
-              Menunggu respon dari server. Proses ini mungkin memakan waktu lebih lama karena keterbatasan layanan
-              gratis.
+              Menunggu respon dari server. Proses ini mungkin memakan waktu lama akibat keterbatasan layanan gratis.
             </p>
           </div>
         ) : (
