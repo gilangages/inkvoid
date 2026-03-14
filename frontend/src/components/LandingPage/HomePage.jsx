@@ -1,5 +1,5 @@
-// frontend/src/components/LandingPage/HomePage.jsx
 import { useEffect, useState, useCallback } from "react";
+import { useLocation } from "react-router";
 import { getAllProducts } from "../../lib/api/ProductApi";
 import { purchaseProduct } from "../../lib/api/PaymentApi";
 
@@ -29,8 +29,13 @@ export const HomePage = () => {
   // State untuk Error Awal (Full Screen jika fetch gagal)
   const [showErrorScreen, setShowErrorScreen] = useState(false);
 
+  // State untuk Fetch Selesai
+  const [fetchComplete, setFetchComplete] = useState(false);
+
   // Loading state biasa untuk komponen showcase (jika perlu refetch nanti)
   const [componentLoading, setComponentLoading] = useState(false);
+
+  const location = useLocation();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -76,8 +81,8 @@ export const HomePage = () => {
         setProducts([]);
       }
 
-      // SUKSES: Matikan loading
-      setIsInitialLoading(false);
+      // SUKSES: Jangan langsung matikan modal, tapi set fetch complete
+      setFetchComplete(true);
     } catch (err) {
       console.error("Error fetching products:", err);
       setProducts([]);
@@ -89,6 +94,7 @@ export const HomePage = () => {
       // 3. Browser user timeout (biasanya sangat lama, > 2 menit)
       setIsInitialLoading(false);
       setShowErrorScreen(true);
+      setFetchComplete(false);
     } finally {
       setComponentLoading(false);
     }
@@ -124,10 +130,33 @@ export const HomePage = () => {
     recordVisit();
   }, []); // Array kosong [] artinya hanya jalan 1x saat website dibuka
 
+  // Check location state setting target after initial loading finishes
+  useEffect(() => {
+    if (!isInitialLoading && !showErrorScreen && location.state?.targetId) {
+      // Tunggu sebentar agar komponen DOM sempat dirender (karena tadinya display 'hidden')
+      const targetId = location.state.targetId;
+
+      // Hapus targetId dari state supaya tidak double scroll kalau user refresh
+      window.history.replaceState({}, document.title)
+
+      setTimeout(() => {
+        const element = document.getElementById(targetId);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 100);
+    }
+  }, [isInitialLoading, showErrorScreen, location.state]);
+
   // Handler tombol "Lanjut"
   const handleContinueAnyway = () => {
     setShowErrorScreen(false);
     // User masuk dengan kondisi produk kosong
+  };
+
+  // Handler LoadingScreen Complete
+  const handleLoadingComplete = () => {
+    setIsInitialLoading(false);
   };
 
   return (
@@ -138,6 +167,8 @@ export const HomePage = () => {
         <LoadingScreen
           isLoading={isInitialLoading}
           isError={showErrorScreen}
+          fetchComplete={fetchComplete}
+          onComplete={handleLoadingComplete}
           onRetry={fetchData}
           onContinue={handleContinueAnyway}
         />
