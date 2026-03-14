@@ -25,7 +25,7 @@ export const LoadingScreen = ({ isLoading, isError, fetchComplete, onComplete, o
       interval = setInterval(() => {
         setProgress((prev) => {
           const next = prev + (100 - prev) * 0.15 + 1.5; // Smoothly approach 100
-          
+
           if (next >= 100) {
             clearInterval(interval);
             setTimeout(() => {
@@ -87,12 +87,12 @@ export const LoadingScreen = ({ isLoading, isError, fetchComplete, onComplete, o
                 </span>
               </div>
             </div>
-            
+
             <h2 className="text-xl font-bold tracking-widest uppercase mb-4 text-[#8287ac]">
               {progress === 100 ? "Menyiapkan Arsip..." : "Membangunkan Server..."}
             </h2>
             <p className="text-xs text-[#B8B3B6] font-mono leading-relaxed opacity-60">
-              Menunggu respon dari server. Proses ini memakan waktu maksimal 50 detik akibat layanan gratis Render.com.
+              Menunggu respon dari server. Proses ini mungkin memakan waktu lama akibat keterbatasan layanan gratis.
             </p>
           </div>
         ) : (
