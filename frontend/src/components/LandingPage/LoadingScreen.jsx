@@ -92,7 +92,8 @@ export const LoadingScreen = ({ isLoading, isError, fetchComplete, onComplete, o
               {progress === 100 ? "Menyiapkan Arsip..." : "Membangunkan Server..."}
             </h2>
             <p className="text-xs text-[#B8B3B6] font-mono leading-relaxed opacity-60">
-              Menunggu respon dari server. Proses ini mungkin memakan waktu lebih lama akibat keterbatasan layanan gratis.
+              Menunggu respon dari server. Proses ini mungkin memakan waktu lebih lama karena keterbatasan layanan
+              gratis.
             </p>
           </div>
         ) : (
