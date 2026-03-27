@@ -1,3 +1,18 @@
+// Catat kunjungan (dengan visitor_id untuk UPSERT)
+export const visitStats = async (visitorId) => {
+  return await fetch(`${import.meta.env.VITE_APP_PATH}/visits`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      visitor_id: visitorId || undefined,
+    }),
+  });
+};
+
+// Admin: Ambil statistik
 export const visitStatsAdmin = async (token) => {
   return await fetch(`${import.meta.env.VITE_APP_PATH}/visits/stats`, {
     method: "GET",
@@ -8,17 +23,7 @@ export const visitStatsAdmin = async (token) => {
   });
 };
 
-export const visitStats = async () => {
-  return await fetch(`${import.meta.env.VITE_APP_PATH}/visits`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-  });
-};
-
-// Ambil daftar pengunjung dengan pagination
+// Admin: Ambil daftar pengunjung dengan pagination
 export const getVisitorList = async (token, page = 1, limit = 10) => {
   return await fetch(
     `${import.meta.env.VITE_APP_PATH}/visits/list?page=${page}&limit=${limit}`,
@@ -32,7 +37,7 @@ export const getVisitorList = async (token, page = 1, limit = 10) => {
   );
 };
 
-// Hapus satu visitor
+// Admin: Hapus satu visitor
 export const deleteVisitor = async (token, id) => {
   return await fetch(`${import.meta.env.VITE_APP_PATH}/visits/${id}`, {
     method: "DELETE",
@@ -43,7 +48,7 @@ export const deleteVisitor = async (token, id) => {
   });
 };
 
-// Hapus semua visitor
+// Admin: Hapus semua visitor
 export const deleteAllVisitors = async (token) => {
   return await fetch(`${import.meta.env.VITE_APP_PATH}/visits/all`, {
     method: "DELETE",

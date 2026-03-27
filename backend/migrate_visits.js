@@ -1,7 +1,6 @@
 // backend/migrate_visits.js
-// migrasi untuk local
-// Script migrasi satu kali: Tambah kolom os, device_type, browser ke tabel visits
-// dan backfill data lama dari user_agent yang sudah tersimpan.
+// Migrasi: Tambah kolom visitor_id + visit_count ke tabel visits
+// + backfill os/device_type/browser dari user_agent
 //
 // Cara pakai: node migrate_visits.js
 
@@ -10,7 +9,6 @@ const UAParser = require("ua-parser-js");
 require("dotenv").config();
 
 async function migrate() {
-  // Buat koneksi langsung (bukan pool) untuk migrasi
   const connection = mysql.createConnection({
     host: process.env.DB_HOST || "localhost",
     user: process.env.DB_USER || "root",
@@ -24,11 +22,13 @@ async function migrate() {
   try {
     console.log("🔄 Memulai migrasi tabel visits...\n");
 
-    // ===== STEP 1: Tambah kolom baru (jika belum ada) =====
+    // ===== STEP 1: Tambah kolom (jika belum ada) =====
     const columnsToAdd = [
       { name: "os", type: "VARCHAR(50) DEFAULT NULL" },
       { name: "device_type", type: "VARCHAR(20) DEFAULT NULL" },
       { name: "browser", type: "VARCHAR(50) DEFAULT NULL" },
+      { name: "visitor_id", type: "VARCHAR(36) DEFAULT NULL" },
+      { name: "visit_count", type: "INT DEFAULT 1" },
     ];
 
     for (const col of columnsToAdd) {
@@ -44,7 +44,19 @@ async function migrate() {
       }
     }
 
-    // ===== STEP 2: Backfill data lama dari user_agent =====
+    // ===== STEP 2: Tambah UNIQUE INDEX pada visitor_id (jika belum ada) =====
+    try {
+      await db.execute("ALTER TABLE visits ADD UNIQUE INDEX idx_visitor_id (visitor_id)");
+      console.log("✅ UNIQUE INDEX 'idx_visitor_id' berhasil ditambahkan.");
+    } catch (err) {
+      if (err.code === "ER_DUP_KEYNAME" || err.message.includes("Duplicate key name")) {
+        console.log("⏭️  UNIQUE INDEX 'idx_visitor_id' sudah ada, skip.");
+      } else {
+        throw err;
+      }
+    }
+
+    // ===== STEP 3: Backfill os/device_type/browser dari user_agent =====
     console.log("\n🔄 Backfill data lama dari user_agent...\n");
 
     const [rows] = await db.execute(
@@ -60,19 +72,28 @@ async function migrate() {
 
       const os = result.os.name || "Unknown";
       const browser = result.browser.name || "Unknown";
-      const deviceType = result.device.type === "mobile" || result.device.type === "tablet" ? "Mobile" : "Desktop";
+      const deviceType =
+        result.device.type === "mobile" || result.device.type === "tablet" ? "Mobile" : "Desktop";
 
-      await db.execute(
-        "UPDATE visits SET os = ?, device_type = ?, browser = ? WHERE id = ?",
-        [os, deviceType, browser, row.id]
-      );
+      await db.execute("UPDATE visits SET os = ?, device_type = ?, browser = ? WHERE id = ?", [
+        os,
+        deviceType,
+        browser,
+        row.id,
+      ]);
       updated++;
     }
 
     console.log(`✅ Berhasil backfill ${updated} baris data!\n`);
 
-    // ===== STEP 3: Verifikasi =====
-    const [sample] = await db.execute("SELECT id, ip_address, os, device_type, browser FROM visits LIMIT 5");
+    // ===== STEP 4: Set visit_count = 1 untuk data lama yang NULL =====
+    await db.execute("UPDATE visits SET visit_count = 1 WHERE visit_count IS NULL");
+    console.log("✅ visit_count di-set ke 1 untuk data lama.\n");
+
+    // ===== STEP 5: Verifikasi =====
+    const [sample] = await db.execute(
+      "SELECT id, ip_address, visitor_id, os, device_type, browser, visit_count FROM visits LIMIT 5"
+    );
     console.log("📋 Sample data setelah migrasi:");
     console.table(sample);
 

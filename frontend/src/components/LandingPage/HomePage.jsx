@@ -109,21 +109,22 @@ export const HomePage = () => {
     // Fungsi untuk mencatat kunjungan
     async function recordVisit() {
       try {
-        const response = await visitStats();
+        // Generate atau ambil visitor_id dari localStorage
+        // Ini tetap sama meskipun IP berubah (WiFi ↔ data seluler)
+        let visitorId = localStorage.getItem("visitor_id");
+        if (!visitorId) {
+          visitorId = crypto.randomUUID(); // UUID v4 standar browser
+          localStorage.setItem("visitor_id", visitorId);
+        }
 
-        // Cek dulu apakah sukses (status 200-299)
+        const response = await visitStats(visitorId);
+
         if (response.ok) {
-          // Kalau sukses, baru kita baca JSON-nya (opsional, karena kita cuma butuh catat)
-          // const data = await response.json();
-          // console.log("Visit recorded:", data);
-        } else {
-          // Jika server merespon error (misal 500 atau 404), diamkan saja (Silent Fail)
-          // console.warn("Gagal mencatat visit:", response.status);
+          // Visit recorded/updated successfully (silent)
         }
       } catch (error) {
+        // Silent fail — jangan ganggu user
         console.error(error);
-        // Jika internet mati atau server down total
-        // Biarkan kosong agar user tidak terganggu
       }
     }
 
