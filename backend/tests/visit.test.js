@@ -216,7 +216,7 @@ describe("Visit API Endpoints", () => {
 
       // Pastikan OFFSET dihitung benar: (3-1) * 5 = 10
       const callArgs = mockDb.execute.mock.calls[1];
-      expect(callArgs[1]).toEqual(["5", "10"]); // [limit, offset]
+      expect(callArgs[0]).toContain("LIMIT 5 OFFSET 10");
     });
 
     it("should reject request without auth token", async () => {

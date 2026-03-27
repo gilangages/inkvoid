@@ -74,9 +74,10 @@ exports.getVisitors = async (req, res) => {
     const totalPages = Math.ceil(totalData / limit);
 
     // Ambil data dengan pagination (terbaru duluan)
+    // Note: LIMIT/OFFSET tidak support placeholder (?) di TiDB/beberapa MySQL,
+    // jadi kita interpolasi langsung. Aman karena sudah di-parseInt di atas.
     const [rows] = await db.execute(
-      "SELECT id, ip_address, user_agent, os, device_type, browser, visit_time FROM visits ORDER BY visit_time DESC LIMIT ? OFFSET ?",
-      [String(limit), String(offset)]
+      `SELECT id, ip_address, user_agent, os, device_type, browser, visit_time FROM visits ORDER BY visit_time DESC LIMIT ${limit} OFFSET ${offset}`
     );
 
     res.status(200).json({
