@@ -30,7 +30,7 @@ export const ProductCard = ({ product, onBuy }) => {
             onDragStart={(e) => e.preventDefault()}
             src={imageUrl}
             alt={product.name}
-            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 grayscale-[20%] group-hover:grayscale-0"
+            className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700"
             onError={() => setImgError(true)}
           />
         ) : (
