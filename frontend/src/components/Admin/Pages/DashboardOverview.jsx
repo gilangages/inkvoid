@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { getAllProducts } from "../../../lib/api/ProductApi";
-// TAMBAH IMPORT ICON 'Users' DI SINI
 import {
   ShoppingBag,
   DollarSign,
@@ -13,6 +12,8 @@ import {
   Globe,
   ChevronLeft,
   ChevronRight,
+  Hash,
+  RefreshCw,
 } from "lucide-react";
 import { Link } from "react-router";
 import {
@@ -285,7 +286,7 @@ export default function DashboardOverview() {
               Daftar Pengunjung
             </h2>
             <p className="text-sm text-[#6B5E51] italic">
-              {pagination.total_data} total kunjungan tercatat
+              {pagination.total_data} pengunjung unik tercatat
             </p>
           </div>
 
@@ -307,24 +308,25 @@ export default function DashboardOverview() {
               <thead>
                 <tr className="bg-[#EAE7DF] border-b-4 border-[#3E362E]">
                   <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider w-12">No</th>
-                  <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider">IP Address</th>
+                  <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider">Visitor ID</th>
                   <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider text-center">OS</th>
                   <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider text-center">Device</th>
                   <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider text-center">Browser</th>
-                  <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider">Waktu</th>
+                  <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider text-center">Visits</th>
+                  <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider">Terakhir</th>
                   <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider text-center w-20">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y-2 divide-[#EAE7DF]">
                 {visitorLoading ? (
                   <tr>
-                    <td colSpan="7" className="p-10 text-center text-[#6B5E51]">
+                    <td colSpan="8" className="p-10 text-center text-[#6B5E51]">
                       Memuat data...
                     </td>
                   </tr>
                 ) : visitors.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="p-10 text-center text-[#6B5E51]">
+                    <td colSpan="8" className="p-10 text-center text-[#6B5E51]">
                       Belum ada data pengunjung.
                     </td>
                   </tr>
@@ -334,7 +336,13 @@ export default function DashboardOverview() {
                       <td className="p-4 text-[#6B5E51] text-sm font-mono">
                         {(pagination.current_page - 1) * pagination.per_page + index + 1}
                       </td>
-                      <td className="p-4 font-medium text-[#3E362E] text-sm font-mono">{v.ip_address}</td>
+                      <td className="p-4 text-sm font-mono">
+                        <span className="text-[#3E362E] font-medium" title={v.visitor_id || v.ip_address}>
+                          {v.visitor_id
+                            ? `${v.visitor_id.slice(0, 8)}...${v.visitor_id.slice(-4)}`
+                            : v.ip_address}
+                        </span>
+                      </td>
                       <td className="p-4 text-center">
                         <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#f3f0e9] rounded-lg text-xs font-bold text-[#3E362E]">
                           {v.os || "—"}
@@ -348,6 +356,12 @@ export default function DashboardOverview() {
                       </td>
                       <td className="p-4 text-center">
                         <span className="text-xs font-medium text-[#6B5E51]">{v.browser || "—"}</span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-lg text-xs font-bold text-blue-600">
+                          <RefreshCw size={12} />
+                          {v.visit_count || 1}x
+                        </span>
                       </td>
                       <td className="p-4 text-xs text-[#6B5E51] font-medium italic">
                         {v.visit_time
@@ -444,11 +458,16 @@ export default function DashboardOverview() {
                   #{(pagination.current_page - 1) * pagination.per_page + index + 1}
                 </div>
 
-                {/* IP */}
-                <p className="text-sm font-mono font-bold text-[#3E362E] mb-2">{v.ip_address}</p>
+                {/* Visitor ID */}
+                <p className="text-xs font-mono text-[#6B5E51] mb-2" title={v.visitor_id || v.ip_address}>
+                  <Hash size={12} className="inline text-[#8DA399]" />
+                  {v.visitor_id
+                    ? `${v.visitor_id.slice(0, 8)}...${v.visitor_id.slice(-4)}`
+                    : v.ip_address}
+                </p>
 
                 {/* Info Grid */}
-                <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="grid grid-cols-4 gap-2 mb-3">
                   <div className="bg-[#f3f0e9] rounded-lg p-2 text-center">
                     <p className="text-[9px] text-[#6B5E51] uppercase font-bold">OS</p>
                     <p className="text-xs font-bold text-[#3E362E]">{v.os || "—"}</p>
@@ -463,6 +482,10 @@ export default function DashboardOverview() {
                   <div className="bg-[#f3f0e9] rounded-lg p-2 text-center">
                     <p className="text-[9px] text-[#6B5E51] uppercase font-bold">Browser</p>
                     <p className="text-xs font-bold text-[#3E362E]">{v.browser || "—"}</p>
+                  </div>
+                  <div className="bg-blue-50 rounded-lg p-2 text-center">
+                    <p className="text-[9px] text-blue-500 uppercase font-bold">Visits</p>
+                    <p className="text-xs font-bold text-blue-600">{v.visit_count || 1}x</p>
                   </div>
                 </div>
 

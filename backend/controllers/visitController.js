@@ -17,20 +17,38 @@ function parseUserAgent(uaString) {
   };
 }
 
-// 1. Catat Kunjungan Baru
+// 1. Catat Kunjungan Baru (UPSERT: insert jika baru, update jika sudah ada)
 exports.recordVisit = async (req, res) => {
   try {
-    // Ambil IP Address (mengatasi proxy/vercel)
     const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
     const userAgent = req.headers["user-agent"];
+    const visitorId = (req.body && req.body.visitor_id) || null;
 
-    // Parse device info dari User-Agent
+    // Parse device info
     const { os, browser, device_type } = parseUserAgent(userAgent);
 
-    // Masukkan ke database dengan kolom baru
-    const query =
-      "INSERT INTO visits (ip_address, user_agent, os, device_type, browser) VALUES (?, ?, ?, ?, ?)";
-    await db.execute(query, [ip, userAgent, os, device_type, browser]);
+    if (visitorId) {
+      // UPSERT: Jika visitor_id sudah ada → UPDATE (waktu, IP, device info, +1 visit_count)
+      // Jika belum ada → INSERT baru
+      const query = `
+        INSERT INTO visits (visitor_id, ip_address, user_agent, os, device_type, browser, visit_time, visit_count)
+        VALUES (?, ?, ?, ?, ?, ?, NOW(), 1)
+        ON DUPLICATE KEY UPDATE
+          ip_address = VALUES(ip_address),
+          user_agent = VALUES(user_agent),
+          os = VALUES(os),
+          device_type = VALUES(device_type),
+          browser = VALUES(browser),
+          visit_time = NOW(),
+          visit_count = visit_count + 1
+      `;
+      await db.execute(query, [visitorId, ip, userAgent, os, device_type, browser]);
+    } else {
+      // Fallback: Jika visitor_id tidak dikirim (browser lama/bot), insert biasa
+      const query =
+        "INSERT INTO visits (ip_address, user_agent, os, device_type, browser) VALUES (?, ?, ?, ?, ?)";
+      await db.execute(query, [ip, userAgent, os, device_type, browser]);
+    }
 
     res.status(200).json({ success: true, message: "Visit recorded" });
   } catch (error) {
@@ -42,11 +60,13 @@ exports.recordVisit = async (req, res) => {
 // 2. Ambil Statistik untuk Admin
 exports.getStats = async (req, res) => {
   try {
-    // Hitung Total Views (Semua baris)
-    const [totalRows] = await db.execute("SELECT COUNT(*) as total FROM visits");
+    // Total Views = jumlah semua kunjungan (termasuk revisit)
+    const [totalRows] = await db.execute(
+      "SELECT COALESCE(SUM(visit_count), 0) as total FROM visits"
+    );
 
-    // Hitung Unique Visitors (Berdasarkan IP yang unik)
-    const [uniqueRows] = await db.execute("SELECT COUNT(DISTINCT ip_address) as unique_visitors FROM visits");
+    // Unique Visitors = jumlah baris (karena tiap visitor_id punya 1 baris)
+    const [uniqueRows] = await db.execute("SELECT COUNT(*) as unique_visitors FROM visits");
 
     res.status(200).json({
       success: true,
@@ -68,16 +88,16 @@ exports.getVisitors = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
-    // Hitung total data untuk pagination info
+    // Hitung total data
     const [countResult] = await db.execute("SELECT COUNT(*) as total FROM visits");
     const totalData = countResult[0].total;
     const totalPages = Math.ceil(totalData / limit);
 
     // Ambil data dengan pagination (terbaru duluan)
-    // Note: LIMIT/OFFSET tidak support placeholder (?) di TiDB/beberapa MySQL,
-    // jadi kita interpolasi langsung. Aman karena sudah di-parseInt di atas.
+    // Note: LIMIT/OFFSET tidak support placeholder (?) di TiDB,
+    // aman karena sudah di-parseInt di atas.
     const [rows] = await db.execute(
-      `SELECT id, ip_address, user_agent, os, device_type, browser, visit_time FROM visits ORDER BY visit_time DESC LIMIT ${limit} OFFSET ${offset}`
+      `SELECT id, visitor_id, ip_address, user_agent, os, device_type, browser, visit_time, visit_count FROM visits ORDER BY visit_time DESC LIMIT ${limit} OFFSET ${offset}`
     );
 
     res.status(200).json({
@@ -101,7 +121,6 @@ exports.deleteVisitor = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Cek apakah data ada
     const [existing] = await db.execute("SELECT id FROM visits WHERE id = ?", [id]);
     if (existing.length === 0) {
       return res.status(404).json({ success: false, message: "Data visitor tidak ditemukan." });

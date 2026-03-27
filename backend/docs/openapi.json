@@ -574,11 +574,29 @@
         "tags": [
           "Visits"
         ],
-        "summary": "Catat Kunjungan Baru (Public)",
-        "description": "Mencatat IP address dan User Agent pengunjung secara otomatis saat membuka homepage.",
+        "summary": "Catat Kunjungan Baru (Public, UPSERT)",
+        "description": "Mencatat kunjungan pengunjung. Jika visitor_id dikirim dan sudah ada di DB, data akan di-UPDATE (visit_count +1, waktu terbaru). Jika belum ada, akan INSERT baru.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "visitor_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "550e8400-e29b-41d4-a716-446655440000",
+                    "description": "UUID unik per device/browser, disimpan di localStorage frontend"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Kunjungan berhasil dicatat",
+            "description": "Kunjungan berhasil dicatat/diupdate",
             "content": {
               "application/json": {
                 "schema": {
@@ -708,6 +726,12 @@
                             "type": "integer",
                             "example": 1
                           },
+                          "visitor_id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "example": "550e8400-e29b-41d4-a716-446655440000",
+                            "description": "UUID unik per device/browser"
+                          },
                           "ip_address": {
                             "type": "string",
                             "example": "182.1.100.50"
@@ -732,6 +756,11 @@
                             "type": "string",
                             "format": "date-time",
                             "example": "2026-03-27T10:30:00Z"
+                          },
+                          "visit_count": {
+                            "type": "integer",
+                            "example": 5,
+                            "description": "Jumlah total kunjungan visitor ini"
                           }
                         }
                       }
