@@ -1,10 +1,29 @@
 import { useEffect, useState } from "react";
 import { getAllProducts } from "../../../lib/api/ProductApi";
 // TAMBAH IMPORT ICON 'Users' DI SINI
-import { ShoppingBag, DollarSign, PlusCircle, Eye, Users } from "lucide-react";
+import {
+  ShoppingBag,
+  DollarSign,
+  PlusCircle,
+  Eye,
+  Users,
+  Trash2,
+  Monitor,
+  Smartphone,
+  Globe,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Link } from "react-router";
-import { visitStatsAdmin } from "../../../lib/api/VisitApi";
+import {
+  visitStatsAdmin,
+  getVisitorList,
+  deleteVisitor,
+  deleteAllVisitors,
+} from "../../../lib/api/VisitApi";
 import { useLocalStorage } from "react-use";
+import { alertConfirm, alertSuccess, alertError } from "../../../lib/alert";
+import { useNavigate } from "react-router";
 
 export default function DashboardOverview() {
   const [stats, setStats] = useState({ total: 0, totalPrice: 0 });
@@ -13,7 +32,138 @@ export default function DashboardOverview() {
   // Inisialisasi state agar tidak crash
   const [visitStats, setVisitStats] = useState({ total_views: 0, unique_visitors: 0 });
 
-  const [token] = useLocalStorage("token", "");
+  // Visitor List State
+  const [visitors, setVisitors] = useState([]);
+  const [visitorLoading, setVisitorLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    total_pages: 1,
+    total_data: 0,
+    per_page: 10,
+  });
+
+  const [_, setToken] = useLocalStorage("token", "");
+  const navigate = useNavigate();
+
+  // Helper: Ambil token valid dari localStorage
+  function getValidToken() {
+    const rawToken = localStorage.getItem("token");
+    if (!rawToken || rawToken === "null" || rawToken === "undefined") return "";
+    try {
+      return JSON.parse(rawToken);
+    } catch {
+      return rawToken;
+    }
+  }
+
+  // Helper: Handle 401/403 (token expired)
+  async function handleAuthError() {
+    await alertError("Sesi anda telah berakhir. Silakan login kembali.");
+    setToken("");
+    navigate("/admin/login");
+  }
+
+  // Fetch visitor list
+  async function fetchVisitors(page = 1) {
+    setVisitorLoading(true);
+    try {
+      const token = getValidToken();
+      const response = await getVisitorList(token, page, 10);
+
+      if (response.status === 401 || response.status === 403) {
+        await handleAuthError();
+        return;
+      }
+
+      if (response.ok) {
+        const body = await response.json();
+        setVisitors(body.data || []);
+        setPagination(body.pagination || pagination);
+      }
+    } catch (error) {
+      console.error("Error fetching visitors:", error);
+    } finally {
+      setVisitorLoading(false);
+    }
+  }
+
+  // Hapus satu visitor
+  async function handleDeleteVisitor(id) {
+    if (!(await alertConfirm("Yakin ingin menghapus data pengunjung ini?"))) return;
+
+    try {
+      const token = getValidToken();
+      const response = await deleteVisitor(token, id);
+
+      if (response.status === 401 || response.status === 403) {
+        await handleAuthError();
+        return;
+      }
+
+      const body = await response.json();
+
+      if (response.ok) {
+        await alertSuccess(body.message);
+        // Refresh data: jika halaman saat ini kosong setelah hapus, mundur 1 halaman
+        const newPage =
+          visitors.length === 1 && pagination.current_page > 1
+            ? pagination.current_page - 1
+            : pagination.current_page;
+        fetchVisitors(newPage);
+        // Refresh stats juga
+        fetchVisitStats();
+      } else {
+        await alertError(body.message);
+      }
+    } catch (error) {
+      console.error(error);
+      await alertError("Terjadi kesalahan sistem.");
+    }
+  }
+
+  // Hapus semua visitor
+  async function handleDeleteAll() {
+    if (!(await alertConfirm("Yakin ingin menghapus SEMUA data pengunjung? Aksi ini tidak bisa dibatalkan.")))
+      return;
+
+    try {
+      const token = getValidToken();
+      const response = await deleteAllVisitors(token);
+
+      if (response.status === 401 || response.status === 403) {
+        await handleAuthError();
+        return;
+      }
+
+      const body = await response.json();
+
+      if (response.ok) {
+        await alertSuccess(body.message);
+        fetchVisitors(1);
+        fetchVisitStats();
+      } else {
+        await alertError(body.message);
+      }
+    } catch (error) {
+      console.error(error);
+      await alertError("Terjadi kesalahan sistem.");
+    }
+  }
+
+  // Fetch visit stats (dipindah ke function sendiri agar bisa dipanggil ulang)
+  async function fetchVisitStats() {
+    try {
+      const token = getValidToken();
+      const response = await visitStatsAdmin(token);
+
+      if (response.ok) {
+        const responseBody = await response.json();
+        setVisitStats(responseBody.data || responseBody);
+      }
+    } catch (error) {
+      console.error("Error koneksi stats:", error);
+    }
+  }
 
   useEffect(() => {
     // 1. Fetch Produk
@@ -33,27 +183,20 @@ export default function DashboardOverview() {
     });
 
     // 2. Fetch Statistik Visit
-    async function fetchVisits() {
-      try {
-        const response = await visitStatsAdmin(token);
+    fetchVisitStats();
 
-        if (response.ok) {
-          const responseBody = await response.json();
-          // Simpan data ke state
-          setVisitStats(responseBody.data || responseBody);
-        } else {
-          console.warn("Gagal ambil stats:", response.status);
-        }
-      } catch (error) {
-        console.error("Error koneksi stats:", error);
-      }
-    }
+    // 3. Fetch Visitor List
+    fetchVisitors(1);
+  }, []);
 
-    fetchVisits();
-  }, [token]);
+  // Helper: Device icon
+  const DeviceIcon = ({ type }) => {
+    if (type === "Mobile") return <Smartphone size={14} className="text-blue-500" />;
+    return <Monitor size={14} className="text-gray-600" />;
+  };
 
   return (
-    <div className="max-w-6xl mx-auto animate-slide-up px-4">
+    <div className="max-w-6xl mx-auto animate-slide-up px-4 pb-20">
       <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#3e362e]">Ringkasan Toko</h1>
@@ -127,6 +270,246 @@ export default function DashboardOverview() {
               </p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ======================================================== */}
+      {/* === SECTION BARU: DAFTAR PENGUNJUNG DENGAN PAGINATION === */}
+      {/* ======================================================== */}
+      <div className="mt-10">
+        {/* Header Section */}
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-black text-[#3E362E] flex items-center gap-2">
+              <Globe size={24} className="text-[#8DA399]" />
+              Daftar Pengunjung
+            </h2>
+            <p className="text-sm text-[#6B5E51] italic">
+              {pagination.total_data} total kunjungan tercatat
+            </p>
+          </div>
+
+          {/* Tombol Hapus Semua */}
+          {visitors.length > 0 && (
+            <button
+              onClick={handleDeleteAll}
+              className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm w-fit">
+              <Trash2 size={16} />
+              Hapus Semua
+            </button>
+          )}
+        </div>
+
+        {/* === TAMPILAN DESKTOP (TABLE) === */}
+        <div className="hidden md:block bg-white rounded-2xl border-4 border-[#3E362E] shadow-[8px_8px_0px_0px_rgba(62,54,46,1)] overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-[#EAE7DF] border-b-4 border-[#3E362E]">
+                  <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider w-12">No</th>
+                  <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider">IP Address</th>
+                  <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider text-center">OS</th>
+                  <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider text-center">Device</th>
+                  <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider text-center">Browser</th>
+                  <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider">Waktu</th>
+                  <th className="p-4 font-bold text-[#3E362E] uppercase text-xs tracking-wider text-center w-20">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y-2 divide-[#EAE7DF]">
+                {visitorLoading ? (
+                  <tr>
+                    <td colSpan="7" className="p-10 text-center text-[#6B5E51]">
+                      Memuat data...
+                    </td>
+                  </tr>
+                ) : visitors.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="p-10 text-center text-[#6B5E51]">
+                      Belum ada data pengunjung.
+                    </td>
+                  </tr>
+                ) : (
+                  visitors.map((v, index) => (
+                    <tr key={v.id} className="hover:bg-[#FDFCF8] transition-colors">
+                      <td className="p-4 text-[#6B5E51] text-sm font-mono">
+                        {(pagination.current_page - 1) * pagination.per_page + index + 1}
+                      </td>
+                      <td className="p-4 font-medium text-[#3E362E] text-sm font-mono">{v.ip_address}</td>
+                      <td className="p-4 text-center">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#f3f0e9] rounded-lg text-xs font-bold text-[#3E362E]">
+                          {v.os || "—"}
+                        </span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold">
+                          <DeviceIcon type={v.device_type} />
+                          {v.device_type || "—"}
+                        </span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className="text-xs font-medium text-[#6B5E51]">{v.browser || "—"}</span>
+                      </td>
+                      <td className="p-4 text-xs text-[#6B5E51] font-medium italic">
+                        {v.visit_time
+                          ? new Date(v.visit_time).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "—"}
+                      </td>
+                      <td className="p-4 text-center">
+                        <button
+                          onClick={() => handleDeleteVisitor(v.id)}
+                          className="p-2 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors"
+                          title="Hapus visitor">
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Desktop */}
+          {pagination.total_pages > 1 && (
+            <div className="flex items-center justify-between p-4 bg-[#FDFCF8] border-t-4 border-[#3E362E]">
+              <p className="text-sm text-[#6B5E51]">
+                Halaman <span className="font-bold text-[#3E362E]">{pagination.current_page}</span> dari{" "}
+                <span className="font-bold text-[#3E362E]">{pagination.total_pages}</span>
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => fetchVisitors(pagination.current_page - 1)}
+                  disabled={pagination.current_page <= 1}
+                  className="p-2 rounded-lg border-2 border-[#3E362E] bg-white hover:bg-[#EAE7DF] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                  <ChevronLeft size={18} />
+                </button>
+
+                {/* Page numbers */}
+                {Array.from({ length: pagination.total_pages }, (_, i) => i + 1)
+                  .filter((p) => {
+                    // Show first, last, and pages near current
+                    return p === 1 || p === pagination.total_pages || Math.abs(p - pagination.current_page) <= 1;
+                  })
+                  .map((p, idx, arr) => (
+                    <span key={p} className="flex items-center gap-1">
+                      {idx > 0 && arr[idx - 1] !== p - 1 && (
+                        <span className="text-[#6B5E51] text-xs px-1">...</span>
+                      )}
+                      <button
+                        onClick={() => fetchVisitors(p)}
+                        className={`w-9 h-9 rounded-lg text-sm font-bold transition-colors border-2 ${
+                          p === pagination.current_page
+                            ? "bg-[#3E362E] text-white border-[#3E362E]"
+                            : "bg-white text-[#3E362E] border-[#e5e0d8] hover:bg-[#EAE7DF]"
+                        }`}>
+                        {p}
+                      </button>
+                    </span>
+                  ))}
+
+                <button
+                  onClick={() => fetchVisitors(pagination.current_page + 1)}
+                  disabled={pagination.current_page >= pagination.total_pages}
+                  className="p-2 rounded-lg border-2 border-[#3E362E] bg-white hover:bg-[#EAE7DF] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* === TAMPILAN MOBILE (CARD LIST) === */}
+        <div className="md:hidden space-y-3">
+          {visitorLoading ? (
+            <div className="text-center p-10 text-[#6B5E51] bg-white rounded-xl border-2 border-[#3E362E]">
+              Memuat data...
+            </div>
+          ) : visitors.length === 0 ? (
+            <div className="text-center p-10 text-[#6B5E51] bg-white rounded-xl border-2 border-[#3E362E]">
+              Belum ada data pengunjung.
+            </div>
+          ) : (
+            visitors.map((v, index) => (
+              <div
+                key={v.id}
+                className="bg-white rounded-2xl border-4 border-[#3E362E] shadow-[4px_4px_0px_0px_rgba(62,54,46,1)] p-4 relative">
+                {/* Badge nomor */}
+                <div className="absolute top-0 right-0 bg-[#3E362E] text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-xl">
+                  #{(pagination.current_page - 1) * pagination.per_page + index + 1}
+                </div>
+
+                {/* IP */}
+                <p className="text-sm font-mono font-bold text-[#3E362E] mb-2">{v.ip_address}</p>
+
+                {/* Info Grid */}
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <div className="bg-[#f3f0e9] rounded-lg p-2 text-center">
+                    <p className="text-[9px] text-[#6B5E51] uppercase font-bold">OS</p>
+                    <p className="text-xs font-bold text-[#3E362E]">{v.os || "—"}</p>
+                  </div>
+                  <div className="bg-[#f3f0e9] rounded-lg p-2 text-center">
+                    <p className="text-[9px] text-[#6B5E51] uppercase font-bold">Device</p>
+                    <p className="text-xs font-bold text-[#3E362E] flex items-center justify-center gap-1">
+                      <DeviceIcon type={v.device_type} />
+                      {v.device_type || "—"}
+                    </p>
+                  </div>
+                  <div className="bg-[#f3f0e9] rounded-lg p-2 text-center">
+                    <p className="text-[9px] text-[#6B5E51] uppercase font-bold">Browser</p>
+                    <p className="text-xs font-bold text-[#3E362E]">{v.browser || "—"}</p>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-2 border-t-2 border-[#EAE7DF]">
+                  <span className="text-[10px] text-[#6B5E51] italic">
+                    {v.visit_time
+                      ? new Date(v.visit_time).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "—"}
+                  </span>
+                  <button
+                    onClick={() => handleDeleteVisitor(v.id)}
+                    className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors"
+                    title="Hapus">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+
+          {/* Pagination Mobile */}
+          {pagination.total_pages > 1 && (
+            <div className="flex items-center justify-between pt-2">
+              <button
+                onClick={() => fetchVisitors(pagination.current_page - 1)}
+                disabled={pagination.current_page <= 1}
+                className="px-4 py-2 rounded-xl border-2 border-[#3E362E] bg-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed">
+                <ChevronLeft size={16} className="inline" /> Prev
+              </button>
+              <span className="text-sm font-bold text-[#3E362E]">
+                {pagination.current_page} / {pagination.total_pages}
+              </span>
+              <button
+                onClick={() => fetchVisitors(pagination.current_page + 1)}
+                disabled={pagination.current_page >= pagination.total_pages}
+                className="px-4 py-2 rounded-xl border-2 border-[#3E362E] bg-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed">
+                Next <ChevronRight size={16} className="inline" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -28,7 +28,7 @@ export const MeetTheArtist = () => {
             <img
               src="./me.png"
               alt="Artist"
-              className="w-full h-full object-cover opacity-70 grayscale-[30%] group-hover:opacity-100 group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000 ease-in-out"
+              className="w-full h-full object-cover group-hover:scale-105 transition-all duration-1000 ease-in-out"
             />
           </div>
 
