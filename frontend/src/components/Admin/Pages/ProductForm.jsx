@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Save, X, UploadCloud, GripVertical } from "lucide-react";
+import { Save, X, UploadCloud, GripVertical, Coffee } from "lucide-react";
 import { createProduct } from "../../../lib/api/ProductApi";
 import { useLocalStorage } from "react-use";
 import { alertError, alertSuccess } from "../../../lib/alert";
@@ -95,6 +95,7 @@ export default function ProductForm() {
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [trakteerLink, setTrakteerLink] = useState("");
 
   // --- REFACTOR STATE (BEST PRACTICE) ---
   // Menggabungkan File dan Label dalam satu object array.
@@ -196,6 +197,11 @@ export default function ProductForm() {
 
       formData.append("image_labels", JSON.stringify(finalLabels));
 
+      // Append Trakteer Link (opsional)
+      if (trakteerLink.trim()) {
+        formData.append("trakteer_link", trakteerLink.trim());
+      }
+
       const response = await createProduct(validToken, formData);
       const responseBody = await response.json();
 
@@ -273,6 +279,21 @@ Tips Menulis:
 - Gunakan bintang dua (**teks**) untuk **tebal**
 - Tekan Enter 2x untuk paragraf baru`}
               />
+            </div>
+            <div>
+              <label className="text-sm font-bold text-[#3e362e] flex items-center gap-2">
+                <Coffee size={16} className="text-[#be1e2d]" />
+                Link Trakteer
+                <span className="text-xs font-normal text-gray-400">(Opsional)</span>
+              </label>
+              <input
+                type="url"
+                value={trakteerLink}
+                onChange={(e) => setTrakteerLink(e.target.value)}
+                className="w-full border-2 border-[#e5e0d8] rounded-lg p-3 mt-1 focus:border-[#be1e2d]/50 outline-none transition-all"
+                placeholder="https://trakteer.id/inkvoid/shop/nama-produk-AbCdE"
+              />
+              <p className="text-xs text-gray-400 mt-1">Salin link produk dari halaman Trakteer Shop kamu.</p>
             </div>
           </div>
 

@@ -78,6 +78,7 @@ describe("POST /api/products - Upload Logic", () => {
         price: 50000,
         description: "Deskripsi Pro",
         image_labels: JSON.stringify(["Tampak Depan"]),
+        trakteer_link: "https://trakteer.id/inkvoid/shop/stiker-production-AbCdE",
       });
 
     expect(res.statusCode).toBe(201);
@@ -87,6 +88,9 @@ describe("POST /api/products - Upload Logic", () => {
 
     // Pastikan URL yang tersimpan adalah link Cloudinary
     expect(savedImage.url).toContain("https://res.cloudinary.com");
+
+    // Pastikan trakteer_link tersimpan
+    expect(res.body.data.trakteer_link).toBe("https://trakteer.id/inkvoid/shop/stiker-production-AbCdE");
   });
 
   test("Should create product with LOCALHOST URL in DEVELOPMENT", async () => {
@@ -105,6 +109,7 @@ describe("POST /api/products - Upload Logic", () => {
         price: 15000,
         description: "Deskripsi Loc",
         image_labels: JSON.stringify(["Label A"]),
+        trakteer_link: "https://trakteer.id/inkvoid/shop/stiker-local-XyZwQ",
       });
 
     expect(res.statusCode).toBe(201);
@@ -113,6 +118,29 @@ describe("POST /api/products - Upload Logic", () => {
     // Controller akan menggabungkan API_BASE_URL + path lokal
     // Hasil: http://localhost:3000/uploads/test-sticker-123.jpg
     expect(savedImage.url).toBe("http://localhost:3000/uploads/test-sticker-123.jpg");
+
+    // Pastikan trakteer_link tersimpan
+    expect(res.body.data.trakteer_link).toBe("https://trakteer.id/inkvoid/shop/stiker-local-XyZwQ");
+  });
+
+  test("Should create product WITHOUT trakteer_link (optional field)", async () => {
+    process.env.NODE_ENV = "development";
+    process.env.API_BASE_URL = "http://localhost:3000";
+
+    db.query.mockResolvedValue([{ insertId: 102 }]);
+
+    const res = await request(app)
+      .post("/api/products")
+      .send({
+        name: "Stiker Tanpa Trakteer",
+        price: 10000,
+        description: "Produk tanpa link trakteer",
+        image_labels: JSON.stringify(["Label B"]),
+        // trakteer_link tidak dikirim
+      });
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body.data.trakteer_link).toBeNull();
   });
 
   test("Should fail if required fields are missing", async () => {

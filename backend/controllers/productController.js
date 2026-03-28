@@ -215,7 +215,7 @@ const getAdminProducts = async (req, res) => {
 // 2. Create Product
 const createProduct = async (req, res) => {
   try {
-    const { name, price, description, file_url, image_labels } = req.body;
+    const { name, price, description, file_url, image_labels, trakteer_link } = req.body;
 
     if (!name || !price || !description) {
       return res.status(400).json({ success: false, message: "Data wajib diisi!" });
@@ -247,8 +247,8 @@ const createProduct = async (req, res) => {
     const imagesJson = JSON.stringify(imageObjects);
 
     const [result] = await db.query(
-      "INSERT INTO products (name, price, description, image_url, images, file_url) VALUES (?, ?, ?, ?, ?, ?)",
-      [name, price, description, mainImage, imagesJson, file_url || null],
+      "INSERT INTO products (name, price, description, image_url, images, file_url, trakteer_link) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [name, price, description, mainImage, imagesJson, file_url || null, trakteer_link || null],
     );
 
     const baseUrl = getBaseUrl(req);
@@ -266,6 +266,7 @@ const createProduct = async (req, res) => {
         price,
         description,
         images: responseImages,
+        trakteer_link: trakteer_link || null,
       },
     });
   } catch (error) {
@@ -328,7 +329,7 @@ const deleteProduct = async (req, res) => {
 // 4. Update Product
 const updateProduct = async (req, res) => {
   const { id } = req.params;
-  const { name, price, description, images_metadata } = req.body;
+  const { name, price, description, images_metadata, trakteer_link } = req.body;
 
   try {
     const [existing] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
@@ -382,12 +383,13 @@ const updateProduct = async (req, res) => {
     const finalMainImage = finalImages.length > 0 ? finalImages[0].url : null;
     const finalImagesJson = JSON.stringify(finalImages);
 
-    await db.query("UPDATE products SET name = ?, price = ?, description = ?, image_url = ?, images = ? WHERE id = ?", [
+    await db.query("UPDATE products SET name = ?, price = ?, description = ?, image_url = ?, images = ?, trakteer_link = ? WHERE id = ?", [
       name,
       price,
       description,
       finalMainImage,
       finalImagesJson,
+      trakteer_link !== undefined ? (trakteer_link || null) : oldProduct.trakteer_link,
       id,
     ]);
 
@@ -397,7 +399,7 @@ const updateProduct = async (req, res) => {
       url: img.url.startsWith("/uploads") ? `${baseUrl}${img.url}` : img.url,
     }));
 
-    res.status(200).json({ success: true, message: "Produk berhasil diupdate!", data: { images: responseImages } });
+    res.status(200).json({ success: true, message: "Produk berhasil diupdate!", data: { images: responseImages, trakteer_link: trakteer_link !== undefined ? (trakteer_link || null) : oldProduct.trakteer_link } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Gagal update produk" });

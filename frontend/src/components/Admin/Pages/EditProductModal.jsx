@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Save, X, UploadCloud, GripVertical } from "lucide-react";
+import { Save, X, UploadCloud, GripVertical, Coffee } from "lucide-react";
 import { productUpdate } from "../../../lib/api/ProductApi";
 import { alertSuccess, alertError } from "../../../lib/alert";
 import { useLocalStorage } from "react-use";
@@ -90,6 +90,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSuccess }
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [items, setItems] = useState([]);
+  const [trakteerLink, setTrakteerLink] = useState("");
 
   // --- DND SENSORS ---
   const sensors = useSensors(
@@ -103,6 +104,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSuccess }
       setName(product.name || "");
       setPrice(product.price || "");
       setDescription(product.description || "");
+      setTrakteerLink(product.trakteer_link || "");
 
       // A. Ambil Label (Parse jika JSON string untuk fallback)
       let loadedLabels = [];
@@ -236,6 +238,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSuccess }
       formData.append("name", name);
       formData.append("price", price);
       formData.append("description", description);
+      formData.append("trakteer_link", trakteerLink.trim());
 
       // [FIX] Susun Metadata untuk Backend
       const metadata = items.map((item, index) => {
@@ -349,6 +352,22 @@ export default function EditProductModal({ product, isOpen, onClose, onSuccess }
                       className="w-full border-2 border-[#e5e0d8] rounded-lg p-3 resize-none focus:border-[#8da399] outline-none transition"
                       required
                     />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-bold text-[#3e362e] mb-1 flex items-center gap-2">
+                      <Coffee size={16} className="text-[#be1e2d]" />
+                      Link Trakteer
+                      <span className="text-xs font-normal text-gray-400">(Opsional)</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={trakteerLink}
+                      onChange={(e) => setTrakteerLink(e.target.value)}
+                      className="w-full border-2 border-[#e5e0d8] rounded-lg p-3 focus:border-[#be1e2d]/50 outline-none transition"
+                      placeholder="https://trakteer.id/inkvoid/shop/nama-produk-AbCdE"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Salin link produk dari halaman Trakteer Shop kamu.</p>
                   </div>
                 </div>
 
