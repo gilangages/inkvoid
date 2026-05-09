@@ -4,28 +4,19 @@ import {
   ChevronLeft,
   ChevronRight,
   Image as ImageIcon,
-  Mail,
-  Check,
-  MessageCircle,
-  AlertCircle,
   Coffee,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
 import ReactMarkdown from "react-markdown";
 
-export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
+export const CheckoutModal = ({ isOpen, onClose, product }) => {
   // --- STATE (Logic Tetap) ---
-  const [email, setEmail] = useState("");
-  const [errors, setErrors] = useState({ email: false, agreement: false });
   const [currentImgIdx, setCurrentImgIdx] = useState(0);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
-  const [isAgreed, setIsAgreed] = useState(false);
 
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
-  const emailInputRef = useRef(null);
-  const agreementRef = useRef(null);
 
   // --- NORMALISASI DATA IMAGES (Logic Tetap) ---
   const getNormalizedImages = () => {
@@ -108,33 +99,8 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
     touchEndX.current = null;
   };
 
-  // --- SUBMIT LOGIC (Logic Tetap) ---
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setErrors({ email: false, agreement: false });
-    let hasError = false;
-    let newErrors = { email: false, agreement: false };
-
-    if (!email) {
-      newErrors.email = true;
-      hasError = true;
-      if (emailInputRef.current) {
-        emailInputRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-        const inputElement = emailInputRef.current.querySelector("input");
-        if (inputElement) inputElement.focus();
-      }
-    } else if (!isAgreed) {
-      newErrors.agreement = true;
-      hasError = true;
-      if (agreementRef.current) {
-        agreementRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    }
-
-    setErrors(newErrors);
-    if (hasError) return;
-    onSubmit({ ...product, buyerEmail: email });
-  };
+  // --- SUBMIT LOGIC ---
+  // Dihapus karena fokus pembelian hanya melalui Trakteer
 
   const markdownComponents = {
     strong: ({ node, ...props }) => <span className="font-bold text-[#E0D7D7]" {...props} />,
@@ -220,7 +186,7 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
 
           {/* KOLOM KANAN (FORM & KONTEN) */}
           <div className="w-full md:w-1/2 flex flex-col flex-1 md:h-full min-h-0 bg-[#121214] overflow-hidden">
-            <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
+            <div className="flex flex-col h-full min-h-0">
               {/* AREA 1: SCROLLABLE CONTENT */}
               <div className="flex-grow overflow-y-auto p-6 md:p-10 custom-scrollbar">
                 <div className="mb-10">
@@ -242,81 +208,27 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
                   </div>
                 </div>
 
-                {/* FORM INPUTS */}
+                {/* INFORMASI PEMBELIAN */}
                 <div className="space-y-6">
-                  <div
-                    ref={emailInputRef}
-                    className={`bg-[#1F1F23]/50 p-1 border transition-all relative group ${
-                      errors.email
-                        ? "border-red-500/50 bg-red-500/5"
-                        : "border-[#8287ac]/10 focus-within:border-[#8287ac]/40"
-                    }`}>
-                    <div
-                      className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.email ? "text-red-500" : "text-[#8287ac]/30"}`}>
-                      <Mail size={16} />
-                    </div>
-                    <input
-                      type="email"
-                      placeholder="Email Gmail"
-                      className="w-full pl-10 pr-10 py-3 bg-transparent text-[#E0D7D7] font-light outline-none placeholder:text-[#B8B3B6]/30 text-xs md:text-sm"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        if (errors.email) setErrors((prev) => ({ ...prev, email: false }));
-                      }}
-                    />
-                    {errors.email && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 animate-pulse">
-                        <AlertCircle size={16} />
-                      </div>
-                    )}
-                  </div>
-
-                  {errors.email ? (
-                    <p className="text-[10px] text-red-500 font-mono tracking-tighter -mt-4 uppercase">
-                      // email_harus_diisi
-                    </p>
-                  ) : (
-                    <p className="text-[10px] text-[#B8B3B6]/40 -mt-4 italic font-mono">
-                      *Akses Google Drive akan dikirim ke email ini.
-                    </p>
-                  )}
-
                   <div className="bg-[#1F1F23] p-5 border border-[#8287ac]/10 space-y-3">
                     <div className="flex items-center gap-2">
                       <Lock size={12} className="text-[#8287ac]/50" />
-                      <p className="text-[9px] font-mono uppercase tracking-widest text-[#8287ac]/70">Proses_Arsip</p>
+                      <p className="text-[9px] font-mono uppercase tracking-widest text-[#8287ac]/70">Akses_Konten</p>
                     </div>
                     <ul className="space-y-1.5 text-[11px] text-[#B8B3B6] font-light leading-relaxed list-disc pl-4 opacity-80">
                       <li>
-                        Konfirmasi via <strong>WhatsApp</strong>.
+                        Pembelian dilakukan via <strong>Trakteer</strong>.
                       </li>
-                      <li>File diaktifkan manual setelah verifikasi.</li>
+                      <li>Tautan unduhan (Google Drive) tersedia langsung setelah transaksi berhasil di platform Trakteer.</li>
+                      <li>Pastikan Anda menyimpan file setelah mengunduhnya.</li>
                     </ul>
                   </div>
 
-                  <div className="pt-2" ref={agreementRef}>
-                    <div
-                      className="flex items-start gap-3 group cursor-pointer select-none"
-                      onClick={() => {
-                        setIsAgreed(!isAgreed);
-                        if (errors.agreement) setErrors((prev) => ({ ...prev, agreement: false }));
-                      }}>
-                      <div
-                        className={`w-4 h-4 mt-0.5 shrink-0 border flex items-center justify-center transition-all ${
-                          isAgreed
-                            ? "bg-[#8287ac] border-[#8287ac]"
-                            : errors.agreement
-                              ? "bg-red-500/10 border-red-500 animate-pulse"
-                              : "bg-[#1F1F23] border-[#8287ac]/20 group-hover:border-[#8287ac]/50"
-                        }`}>
-                        {isAgreed && <Check size={12} className="text-[#121214]" strokeWidth={4} />}
-                      </div>
-
+                  <div className="pt-2">
+                    <div className="flex items-start gap-3">
                       <div className="flex flex-col">
-                        <p
-                          className={`text-[11px] font-light leading-snug ${errors.agreement ? "text-red-500" : "text-[#B8B3B6]"}`}>
-                          Menyetujui{" "}
+                        <p className="text-[11px] font-light leading-snug text-[#B8B3B6]">
+                          Dengan membeli, Anda menyetujui{" "}
                           <Link to="/terms" className="text-[#E0D7D7] underline hover:text-[#8287ac] transition-colors">
                             Syarat & Ketentuan
                           </Link>{" "}
@@ -328,11 +240,6 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
                           </Link>
                           .
                         </p>
-                        {errors.agreement && (
-                          <span className="text-[9px] text-red-500 font-mono uppercase mt-1 tracking-tighter">
-                            // persetujuan_dibutuhkan
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -351,7 +258,7 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="w-full">
                     {/* TOMBOL TRAKTEER */}
                     <a
                       href={product.trakteer_link || "https://trakteer.id/inkvoid/shop/lumas-daily-life-vol-1-buwG2"}
@@ -362,23 +269,12 @@ export const CheckoutModal = ({ isOpen, onClose, product, onSubmit }) => {
                         size={16}
                         className="text-[#be1e2d] group-hover:scale-110 transition-transform shrink-0"
                       />
-                      <span className="truncate">Via Trakteer</span>
+                      <span>Beli via Trakteer</span>
                     </a>
-
-                    {/* TOMBOL WHATSAPP */}
-                    <button
-                      type="submit"
-                      className="w-full border border-[#25D366]/40 text-[#E0D7D7] font-bold py-3.5 hover:bg-[#25D366]/10 transition-all flex justify-center items-center gap-2 uppercase tracking-[0.1em] text-[10px] md:text-[11px] group px-2">
-                      <MessageCircle
-                        size={16}
-                        className={`text-[#25D366] shrink-0 ${isAgreed && email ? "group-hover:-rotate-12 transition-transform" : "opacity-40"}`}
-                      />
-                      <span className="truncate">Via WhatsApp</span>
-                    </button>
                   </div>
                 </div>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       </div>
