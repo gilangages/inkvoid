@@ -1,57 +1,56 @@
 // gilangages/lumasticker/lumasticker-main/frontend/src/components/LandingPage/Section/HowToOrder.jsx
 
-import { ShoppingBag, CreditCard, MessageCircle, Download } from "lucide-react";
+import { ShoppingBag, CreditCard, Unlock, Download } from "lucide-react";
 
 export const HowToOrder = () => {
   const steps = [
     {
       title: "Pilih Koleksi Digital",
       description:
-        "Telusuri koleksi lengkap kami. Seluruh paket stiker tersedia dengan harga tetap Rp10.000, mencakup format siap cetak (A4) dan digital (PNG).",
+        "Telusuri koleksi lengkap kami. Klik pada karya yang Anda inginkan, kemudian buka detail produk untuk melihat informasi lebih lanjut.",
       icon: <ShoppingBag size={20} className="text-[#8287ac]" />,
     },
     {
-      title: "Selesaikan Pembayaran",
+      title: "Pembayaran via Trakteer",
       description: (
         <div className="space-y-4">
-          <p>Silakan lakukan transfer sesuai nominal produk (Rp10.000) ke rekening resmi berikut:</p>
+          <p>Klik tombol <b>'Beli via Trakteer'</b> pada modal produk. Anda akan diarahkan secara aman ke halaman karya Trakteer resmi kami.</p>
           <div className="bg-[#121214] p-5 border border-[#8287ac]/20 relative group transition-all duration-300">
             <div className="flex justify-between items-start mb-2">
-              <p className="font-bold text-[#8287ac] text-[10px] uppercase tracking-widest">Bank Jago</p>
+              <p className="font-bold text-[#8287ac] text-[10px] uppercase tracking-widest">Metode Pembayaran</p>
               <div className="h-1.5 w-1.5 rounded-full bg-[#8287ac]/40"></div>
             </div>
-            <p className="text-xl md:text-2xl font-black tracking-wider text-[#E0D7D7] font-mono mb-1 selection:bg-[#8287ac] selection:text-[#121214]">
-              5098 4594 4294
+            <p className="text-sm tracking-wide text-[#E0D7D7] font-mono mb-1">
+              QRIS, GoPay, OVO, ShopeePay, dll.
             </p>
-            <p className="text-xs text-[#B8B3B6] font-medium uppercase tracking-tight">a.n Gilang Abdian Anggara</p>
+            <p className="text-[10px] text-[#B8B3B6] font-medium uppercase tracking-tight opacity-70">Cepat & Otomatis</p>
           </div>
         </div>
       ),
       icon: <CreditCard size={20} className="text-[#8287ac]" />,
     },
     {
-      title: "Konfirmasi Pesanan",
+      title: "Akses Tautan Unduhan",
       description: (
         <div className="space-y-3">
           <p>
-            Setelah pembayaran berhasil, kembali ke tampilan detail produk dan klik tombol{" "}
-            <b>'Konfirmasi via WhatsApp'</b> untuk mengirim bukti transfer ke Admin.
+            Setelah transaksi di Trakteer berhasil, tautan unduhan (Google Drive) akan terbuka otomatis dan terlampir pada karya tersebut.
           </p>
           <div className="inline-flex items-center gap-2 border border-[#8287ac]/20 px-3 py-2 text-[11px] font-mono text-[#B8B3B6]">
-            <span>🕒</span>
-            <span>Jam Operasional: 07:00 - 22:00 WIB</span>
+            <span>⚡</span>
+            <span>Akses Instan 24/7</span>
           </div>
           <p className="text-xs text-[#B8B3B6]/50 italic leading-relaxed">
-            *Pesan yang masuk di luar jam operasional akan diproses pada hari berikutnya.
+            *Tidak perlu konfirmasi manual ke Admin. File bisa langsung diakses.
           </p>
         </div>
       ),
-      icon: <MessageCircle size={20} className="text-[#8287ac]" />,
+      icon: <Unlock size={20} className="text-[#8287ac]" />,
     },
     {
       title: "Terima & Unduh",
       description:
-        "Tautan unduhan pribadi (Google Drive) akan dikirimkan setelah verifikasi selesai. File stiker siap dicetak ulang (Printable) atau digunakan secara digital.",
+        "Unduh file stiker Anda melalui Google Drive. File tersedia dalam format siap cetak (Printable A4) dan digital (PNG) transparan.",
       icon: <Download size={20} className="text-[#8287ac]" />,
     },
   ];
@@ -80,9 +79,8 @@ export const HowToOrder = () => {
           {steps.map((step, idx) => (
             <div
               key={idx}
-              className={`relative flex flex-col md:flex-row gap-8 md:gap-16 items-start ${
-                idx % 2 === 0 ? "md:flex-row-reverse" : ""
-              }`}>
+              className={`relative flex flex-col md:flex-row gap-8 md:gap-16 items-start ${idx % 2 === 0 ? "md:flex-row-reverse" : ""
+                }`}>
               {/* ICON CONTAINER: Square & Raw */}
               <div className="absolute left-6 md:left-1/2 -translate-x-1/2 w-10 h-10 bg-[#121214] border border-[#8287ac]/30 flex items-center justify-center z-10">
                 {step.icon}
