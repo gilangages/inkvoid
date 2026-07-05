@@ -30,46 +30,25 @@ export default function PrivacyPolicy() {
             <section className="border-l border-[#8287ac]/20 pl-6 md:pl-8">
               <h2 className="text-xl font-bold text-[#E0D7D7] mb-4 tracking-tight">1. Data yang Kami Kumpulkan</h2>
               <p>
-                Untuk menjaga privasi dan keamanan Anda, LumaSticker hanya mengumpulkan data yang esensial untuk
-                keperluan akses produk, yaitu:
-              </p>
-              <ul className="list-disc pl-5 mt-4 space-y-2 opacity-90">
-                <li>
-                  <strong className="text-[#8287ac]">Alamat Email (Gmail):</strong> Wajib diisi saat checkout untuk
-                  memberikan izin akses (permission) ke file produk di Google Drive.
-                </li>
-              </ul>
-            </section>
-
-            {/* BAGIAN 2: PENGGUNAAN INFORMASI */}
-            <section className="border-l border-[#8287ac]/20 pl-6 md:pl-8">
-              <h2 className="text-xl font-bold text-[#E0D7D7] mb-4 tracking-tight">2. Penggunaan Informasi</h2>
-              <p>Alamat Email yang Anda berikan semata-mata digunakan untuk:</p>
-              <ul className="list-disc pl-5 mt-4 space-y-2 opacity-90">
-                <li>
-                  Menambahkan akun Anda ke daftar <em className="text-[#8287ac]">"Allowed Viewers"</em> di folder Google
-                  Drive produk yang Anda beli.
-                </li>
-                <li>Mengirimkan notifikasi terkait akses file (jika diperlukan).</li>
-              </ul>
-              <p className="mt-6 text-[#8287ac] font-medium italic opacity-90">
-                Kami menjamin tidak akan menjual atau membagikan email Anda kepada pihak ketiga manapun.
+                Kami mengutamakan privasi Anda. InkVoid tidak mengumpulkan data pribadi secara langsung di situs ini.
+                Seluruh kebutuhan akun untuk akses produk ditangani sepenuhnya oleh platform pihak ketiga (Trakteer).
               </p>
             </section>
 
-            {/* BAGIAN 3: TRANSAKSI */}
+            {/* BAGIAN 2: TRANSAKSI & PEMBAYARAN */}
             <section className="border-l border-[#8287ac]/20 pl-6 md:pl-8">
-              <h2 className="text-xl font-bold text-[#E0D7D7] mb-4 tracking-tight">3. Transaksi & Pembayaran</h2>
+              <h2 className="text-xl font-bold text-[#E0D7D7] mb-4 tracking-tight">2. Transaksi & Pembayaran</h2>
               <p>
-                Seluruh proses konfirmasi pembayaran dilakukan secara langsung melalui{" "}
-                <strong className="text-[#8287ac]">WhatsApp</strong>. Hal ini dilakukan untuk memastikan keamanan
-                transaksi dan memudahkan komunikasi Anda dengan Admin.
+                Seluruh proses transaksi dan pembayaran dikelola secara aman oleh platform pihak ketiga, yaitu{" "}
+                <strong className="text-[#8287ac]">Trakteer</strong>. Kami tidak mengumpulkan, memproses, atau menyimpan
+                data pembayaran sensitif Anda (seperti informasi kartu kredit, dompet digital, atau rekening bank) di
+                dalam sistem kami.
               </p>
             </section>
 
-            {/* BAGIAN 4: KONTAK */}
+            {/* BAGIAN 3: KONTAK */}
             <section className="border-l border-[#8287ac]/20 pl-6 md:pl-8">
-              <h2 className="text-xl font-bold text-[#E0D7D7] mb-4 tracking-tight">4. Hubungi Kami</h2>
+              <h2 className="text-xl font-bold text-[#E0D7D7] mb-4 tracking-tight">3. Hubungi Kami</h2>
               <p>
                 Pertanyaan seputar privasi dapat dikirim ke:
                 <a

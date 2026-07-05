@@ -30,7 +30,7 @@ export default function TermsAndConditions() {
             <section className="border-l border-[#8287ac]/20 pl-6 md:pl-8">
               <h2 className="text-xl font-bold text-[#E0D7D7] mb-4 tracking-tight">1. Produk Digital</h2>
               <p>
-                Produk yang dijual di LumaSticker adalah{" "}
+                Produk yang dijual di InkVoid adalah{" "}
                 <strong className="text-[#8287ac]">aset digital (softcopy)</strong>.
                 <strong className="text-[#8287ac]"> Tidak ada produk fisik</strong> yang dikirim ke rumah.
               </p>
@@ -41,12 +41,12 @@ export default function TermsAndConditions() {
               <h2 className="text-xl font-bold text-[#E0D7D7] mb-4 tracking-tight">2. Pemesanan & Pembayaran</h2>
               <ul className="list-disc pl-5 space-y-3 opacity-90">
                 <li>
-                  Saat checkout, Anda <strong className="text-[#8287ac]">wajib menyertakan alamat Email (Gmail)</strong>{" "}
-                  yang aktif.
+                  Proses pembayaran dilakukan melalui platform pihak ketiga, yaitu{" "}
+                  <strong className="text-[#8287ac]">Trakteer</strong>.
                 </li>
                 <li>
-                  Penyelesaian pembayaran dilakukan secara manual via transfer Bank/E-Wallet dan dikonfirmasi melalui{" "}
-                  <strong className="text-[#8287ac]">WhatsApp</strong>.
+                  Anda diwajibkan memiliki akun Trakteer yang aktif (atau mendaftar terlebih dahulu) untuk dapat
+                  menyelesaikan transaksi dan mendapatkan akses ke produk.
                 </li>
               </ul>
             </section>
@@ -54,20 +54,12 @@ export default function TermsAndConditions() {
             {/* 3. Pengiriman File */}
             <section className="border-l border-[#8287ac]/20 pl-6 md:pl-8">
               <h2 className="text-xl font-bold text-[#E0D7D7] mb-4 tracking-tight">3. Pengiriman & Akses File</h2>
-              <p>
-                File disimpan secara aman di <strong className="text-[#8287ac]">Google Drive</strong> dengan metode{" "}
-                <em className="italic opacity-80 text-[#8287ac]">Restricted Access</em>.
-              </p>
               <ul className="list-disc pl-5 mt-4 space-y-3 opacity-90">
                 <li>
-                  Setelah pembayaran terverifikasi, Admin akan memberikan akses ke email yang Anda masukkan saat
-                  checkout.
+                  Akses ke file produk digital akan diberikan secara otomatis melalui platform{" "}
+                  <strong className="text-[#8287ac]">Trakteer</strong> setelah pembayaran Anda terverifikasi.
                 </li>
-                <li>
-                  Pastikan email tersebut adalah <strong className="text-[#8287ac]">Gmail</strong> agar bisa membuka
-                  folder Google Drive.
-                </li>
-                <li>Anda dilarang menyebarkan link atau memberikan akses akun Anda ke pihak lain.</li>
+                <li>Anda dilarang menyebarkan link unduhan atau memberikan akses akun Anda ke pihak lain.</li>
               </ul>
             </section>
 

@@ -40,7 +40,7 @@ export const MeetTheArtist = () => {
 
           {/* Icon GitHub */}
           <a
-            href="https://github.com/gilangages"
+            href="https://github.com/gilangabdian"
             target="_blank"
             rel="noopener noreferrer"
             className="absolute bottom-6 right-6 z-20 text-[#8287ac]/50 hover:text-[#8287ac] transition-colors duration-300 drop-shadow-md bg-[#121214]/60 p-2 rounded-sm backdrop-blur-sm border border-[#8287ac]/10"

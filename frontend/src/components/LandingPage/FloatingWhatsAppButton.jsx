@@ -5,7 +5,7 @@ import React from "react";
 export const FloatingWhatsAppButton = () => {
   return (
     <a
-      href="https://wa.me/6283824032460?text=Halo,%20ingin%20diskusi%20terkait%20karya..."
+      href="https://wa.me/6285798124873?text=Halo,%20ingin%20diskusi%20terkait%20karya..."
       target="_blank"
       rel="noreferrer"
       // Position tetap (bottom-8 right-2), style diubah ke InkVoid (dark & sharp)
