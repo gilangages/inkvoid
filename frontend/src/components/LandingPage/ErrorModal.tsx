@@ -1,6 +1,12 @@
-import { XCircle, AlertTriangle } from "lucide-react";
+import { XCircle } from "lucide-react";
 
-export const ErrorModal = ({ isOpen, onClose, message }) => {
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  message?: string;
+}
+
+export const ErrorModal = ({ isOpen, onClose, message }: Props) => {
   if (!isOpen) return null;
 
   return (

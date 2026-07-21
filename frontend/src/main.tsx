@@ -1,22 +1,22 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import { HomePage } from "./components/LandingPage/HomePage.jsx";
+import { HomePage } from "./components/LandingPage/HomePage";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
-import AdminLogin from "./components/Admin/AdminLogin.jsx";
-import LayoutAdmin from "./components/Admin/LayoutAdmin/LayoutAdmin.jsx";
-import AdminLogout from "./components/Admin/AdminLogout.jsx";
-import ProductList from "./components/Admin/Pages/ProductList.jsx";
-import ProductForm from "./components/Admin/Pages/ProductForm.jsx";
-import DashboardOverview from "./components/Admin/Pages/DashboardOverview.jsx";
-import ProtectedRoute from "./components/ProtectedRoute.jsx";
-import NotFound from "./components/NotFound.jsx";
-import OrderHistory from "./components/Admin/Pages/OrderHistory.jsx";
-import TermsAndConditions from "./components/LandingPage/TermsAndConditions.jsx";
-import PrivacyPolicy from "./components/LandingPage/PrivacyPolicy.jsx";
-import GuestRoute from "./components/GuestRoute.jsx";
+import AdminLogin from "./components/Admin/AdminLogin";
+import LayoutAdmin from "./components/Admin/LayoutAdmin/LayoutAdmin";
+import AdminLogout from "./components/Admin/AdminLogout";
+import ProductList from "./components/Admin/Pages/ProductList";
+import ProductForm from "./components/Admin/Pages/ProductForm";
+import DashboardOverview from "./components/Admin/Pages/DashboardOverview";
+import ProtectedRoute from "./components/ProtectedRoute";
+import NotFound from "./components/NotFound";
+import OrderHistory from "./components/Admin/Pages/OrderHistory";
+import TermsAndConditions from "./components/LandingPage/TermsAndConditions";
+import PrivacyPolicy from "./components/LandingPage/PrivacyPolicy";
+import GuestRoute from "./components/GuestRoute";
 
-createRoot(document.getElementById("root")).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>

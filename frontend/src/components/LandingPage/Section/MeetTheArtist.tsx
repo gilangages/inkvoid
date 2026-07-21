@@ -1,6 +1,6 @@
 // gilangages/lumasticker/lumasticker-main/frontend/src/components/LandingPage/Section/MeetTheArtist.jsx
 
-import React from "react";
+
 
 export const MeetTheArtist = () => {
   return (

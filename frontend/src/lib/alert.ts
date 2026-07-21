@@ -1,6 +1,6 @@
 import Swal from "sweetalert2";
 
-export const alertSuccess = async (message) => {
+export const alertSuccess = async (message: string) => {
   return Swal.fire({
     icon: "success",
     title: "Success",
@@ -18,7 +18,7 @@ export const alertSuccess = async (message) => {
   });
 };
 
-export const alertError = async (message) => {
+export const alertError = async (message: string) => {
   return Swal.fire({
     icon: "error",
     title: "Ups",
@@ -36,7 +36,7 @@ export const alertError = async (message) => {
   });
 };
 
-export const alertConfirm = async (message) => {
+export const alertConfirm = async (message: string) => {
   const result = await Swal.fire({
     icon: "question",
     title: "Apakah kamu yakin?",

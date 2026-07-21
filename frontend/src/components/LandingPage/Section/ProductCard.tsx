@@ -3,14 +3,21 @@
 import { ShoppingBag, ImageOff } from "lucide-react";
 import { useState } from "react";
 
-export const ProductCard = ({ product, onBuy }) => {
+import type { components } from "../../../types/api";
+
+interface ProductCardProps {
+  product: components["schemas"]["Product"];
+  onBuy: (product: components["schemas"]["Product"]) => void;
+}
+
+export const ProductCard = ({ product, onBuy }: ProductCardProps) => {
   const [imgError, setImgError] = useState(false);
 
   // Logic tetap: Mendapatkan URL gambar utama
   const getMainImage = () => {
     if (Array.isArray(product.images) && product.images.length > 0) {
       const firstImg = product.images[0];
-      return typeof firstImg === "object" ? firstImg.url : firstImg;
+      return typeof firstImg === "object" ? (firstImg as any).url : firstImg;
     }
     if (product.image_url) return product.image_url;
     return null;
@@ -42,7 +49,7 @@ export const ProductCard = ({ product, onBuy }) => {
 
         {/* Label Harga: Style tag minimalis */}
         <div className="absolute top-3 right-3 bg-[#121214]/80 backdrop-blur-sm border border-[#8287ac]/30 text-[#E0D7D7] text-[10px] font-mono px-2 py-1 z-10">
-          Rp {parseInt(product.price).toLocaleString("id-ID")}
+          Rp {(product.price ?? 0).toLocaleString("id-ID")}
         </div>
       </div>
 

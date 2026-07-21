@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Save, X, UploadCloud, GripVertical, Coffee } from "lucide-react";
-import { productUpdate } from "../../../lib/api/ProductApi";
+import api from "../../../lib/api/apiClient";
 import { alertSuccess, alertError } from "../../../lib/alert";
 import { useLocalStorage } from "react-use";
 import TextAreaAutosize from "react-textarea-autosize";
@@ -19,7 +19,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useNavigate } from "react-router";
 
 // --- KOMPONEN ITEM (Sama seperti ProductForm) ---
-function SortablePhoto({ id, item, index, onRemove, onLabelChange, onPreview }) {
+function SortablePhoto({ id, item, index, onRemove, onLabelChange, onPreview }: any) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
   const style = {
@@ -78,10 +78,10 @@ function SortablePhoto({ id, item, index, onRemove, onLabelChange, onPreview }) 
   );
 }
 
-export default function EditProductModal({ product, isOpen, onClose, onSuccess }) {
-  const [token, setToken] = useLocalStorage("token", "");
+export default function EditProductModal({ product, isOpen, onClose, onSuccess }: any) {
+  const [, setToken] = useLocalStorage("token", "");
   const [isLoading, setIsLoading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
@@ -89,7 +89,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSuccess }
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<any[]>([]);
   const [trakteerLink, setTrakteerLink] = useState("");
 
   // --- DND SENSORS ---
@@ -107,7 +107,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSuccess }
       setTrakteerLink(product.trakteer_link || "");
 
       // A. Ambil Label (Parse jika JSON string untuk fallback)
-      let loadedLabels = [];
+      let loadedLabels: any[] = [];
       if (product.image_labels) {
         if (Array.isArray(product.image_labels)) {
           loadedLabels = product.image_labels;
@@ -122,11 +122,11 @@ export default function EditProductModal({ product, isOpen, onClose, onSuccess }
       }
 
       // B. Setup Items (Gambar Lama + Labelnya)
-      let initialItems = [];
+      let initialItems: any[] = [];
 
       // Cek apakah images array valid
       if (product.images && Array.isArray(product.images) && product.images.length > 0) {
-        initialItems = product.images.map((item, idx) => {
+        initialItems = product.images.map((item: any, idx: number) => {
           // [FIX LOGIC] Cek apakah item adalah Object (Format Baru) atau String (Format Lama)
           const isObject = typeof item === "object" && item !== null;
 
@@ -166,7 +166,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSuccess }
   }, [isOpen, product]);
 
   // --- HANDLER UPLOAD GAMBAR BARU ---
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFiles = Array.from(e.target.files);
       const newItems = selectedFiles.map((file) => ({
@@ -182,7 +182,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSuccess }
   };
 
   // --- DRAG END HANDLER ---
-  const handleDragEnd = (event) => {
+  const handleDragEnd = (event: any) => {
     const { active, over } = event;
     if (active.id !== over.id) {
       setItems((items) => {
@@ -193,11 +193,11 @@ export default function EditProductModal({ product, isOpen, onClose, onSuccess }
     }
   };
 
-  const handleLabelChange = (id, newLabel) => {
+  const handleLabelChange = (id: string, newLabel: string) => {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, label: newLabel } : item)));
   };
 
-  const removeItem = (id) => {
+  const removeItem = (id: string) => {
     // === FIX: Validasi Minimal 1 Gambar ===
     if (items.length <= 1) {
       alertError("Minimal harus menyisakan 1 foto produk!");
@@ -208,7 +208,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSuccess }
   };
 
   // --- SUBMIT ---
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (items.length === 0) {
@@ -216,20 +216,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSuccess }
       return;
     }
 
-    const rawToken = localStorage.getItem("token");
-    if (!rawToken || rawToken === null || rawToken === "undefined") {
-      await alertError("Sesi anda telah berakhir (Token hilang).");
-      navigate("/admin/login");
-      return;
-    }
-
-    let validToken = rawToken;
-    try {
-      validToken = JSON.parse(rawToken);
-    } catch (e) {
-      console.log(e);
-      validToken = rawToken;
-    }
+    // Token fetching logic removed as apiClient handles it automatically
 
     setIsLoading(true);
 
@@ -272,8 +259,10 @@ export default function EditProductModal({ product, isOpen, onClose, onSuccess }
       });
 
       // Panggil API
-      const response = await productUpdate(validToken || token, product.id, formData);
-      const responseBody = await response.json();
+      const { response, error } = await api.PUT("/products/{id}", {
+        params: { path: { id: product.id } },
+        body: formData as any,
+      });
 
       if (response.status == 401 || response.status === 403) {
         await alertError("Gagal update: Sesi habis.");
@@ -287,7 +276,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSuccess }
         onSuccess();
         onClose();
       } else {
-        alertError(responseBody.message || "Gagal update produk");
+        alertError((error as any)?.message || "Gagal update produk");
       }
     } catch (error) {
       console.error(error);

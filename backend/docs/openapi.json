@@ -252,6 +252,17 @@
                     "nullable": true,
                     "description": "URL link Trakteer untuk produk ini (opsional)",
                     "example": "https://trakteer.id/inkvoid/shop/product-name-AbCdE"
+                  },
+                  "file_url": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "URL file Google Drive (legacy)",
+                    "example": "https://drive.google.com/..."
+                  },
+                  "image_labels": {
+                    "type": "string",
+                    "description": "JSON stringified array of labels untuk images",
+                    "example": "[\"cover\", \"preview\"]"
                   }
                 }
               }
@@ -366,6 +377,11 @@
                     "nullable": true,
                     "description": "URL link Trakteer untuk produk ini (opsional)",
                     "example": "https://trakteer.id/inkvoid/shop/product-name-AbCdE"
+                  },
+                  "images_metadata": {
+                    "type": "string",
+                    "description": "JSON stringified array of image metadata (url, label, type, order)",
+                    "example": "[{\"type\":\"existing\",\"url\":\"...\",\"label\":\"cover\",\"order\":0}]"
                   }
                 }
               }
@@ -583,106 +599,6 @@
           },
           "404": {
             "description": "Order ID tidak ditemukan"
-          }
-        }
-      }
-    },
-    "/visit": {
-      "post": {
-        "tags": [
-          "Visits"
-        ],
-        "summary": "Catat Kunjungan Baru (Public, UPSERT)",
-        "description": "Mencatat kunjungan pengunjung. Jika visitor_id dikirim dan sudah ada di DB, data akan di-UPDATE (visit_count +1, waktu terbaru). Jika belum ada, akan INSERT baru.",
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "visitor_id": {
-                    "type": "string",
-                    "format": "uuid",
-                    "example": "550e8400-e29b-41d4-a716-446655440000",
-                    "description": "UUID unik per device/browser, disimpan di localStorage frontend"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Kunjungan berhasil dicatat/diupdate",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Visit recorded"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Server Error"
-          }
-        }
-      }
-    },
-    "/visit/stats": {
-      "get": {
-        "tags": [
-          "Visits"
-        ],
-        "summary": "Ambil Statistik Pengunjung (Admin)",
-        "description": "Mengambil total views dan unique visitors untuk ditampilkan di Dashboard Admin.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Statistik berhasil diambil",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "total_views": {
-                          "type": "integer",
-                          "example": 150
-                        },
-                        "unique_visitors": {
-                          "type": "integer",
-                          "example": 120
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Server Error"
           }
         }
       }
@@ -1093,6 +1009,106 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/visits": {
+      "post": {
+        "tags": [
+          "Visits"
+        ],
+        "summary": "Catat Kunjungan Baru (Public, UPSERT)",
+        "description": "Mencatat kunjungan pengunjung. Jika visitor_id dikirim dan sudah ada di DB, data akan di-UPDATE (visit_count +1, waktu terbaru). Jika belum ada, akan INSERT baru.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "visitor_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "550e8400-e29b-41d4-a716-446655440000",
+                    "description": "UUID unik per device/browser, disimpan di localStorage frontend"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kunjungan berhasil dicatat/diupdate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Visit recorded"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server Error"
+          }
+        }
+      }
+    },
+    "/visits/stats": {
+      "get": {
+        "tags": [
+          "Visits"
+        ],
+        "summary": "Ambil Statistik Pengunjung (Admin)",
+        "description": "Mengambil total views dan unique visitors untuk ditampilkan di Dashboard Admin.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistik berhasil diambil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "total_views": {
+                          "type": "integer",
+                          "example": 150
+                        },
+                        "unique_visitors": {
+                          "type": "integer",
+                          "example": 120
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server Error"
           }
         }
       }

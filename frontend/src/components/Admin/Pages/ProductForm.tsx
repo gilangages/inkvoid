@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Save, X, UploadCloud, GripVertical, Coffee } from "lucide-react";
-import { createProduct } from "../../../lib/api/ProductApi";
+import api from "../../../lib/api/apiClient";
 import { useLocalStorage } from "react-use";
 import { alertError, alertSuccess } from "../../../lib/alert";
 import { useNavigate } from "react-router";
@@ -15,7 +15,6 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragOverlay,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -27,7 +26,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 // --- KOMPONEN ITEM YANG BISA DI-SORT ---
-function SortablePhoto({ id, item, index, onRemove, onLabelChange, onPreview }) {
+function SortablePhoto({ id, item, index, onRemove, onLabelChange, onPreview }: any) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
   const style = {
@@ -87,20 +86,20 @@ function SortablePhoto({ id, item, index, onRemove, onLabelChange, onPreview }) 
 }
 
 export default function ProductForm() {
-  const [_, setToken] = useLocalStorage("token", "");
+  const [, setToken] = useLocalStorage("token", "");
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [trakteerLink, setTrakteerLink] = useState("");
 
   // --- REFACTOR STATE (BEST PRACTICE) ---
   // Menggabungkan File dan Label dalam satu object array.
   // Struktur: { id: string, file: File, label: string, preview: string }
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<any[]>([]);
 
   // Setup Sensor untuk Dnd-Kit (PointerSensor support Mouse & Touch)
   const sensors = useSensors(
@@ -114,7 +113,7 @@ export default function ProductForm() {
     }),
   );
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFiles = Array.from(e.target.files);
 
@@ -135,7 +134,7 @@ export default function ProductForm() {
     }
   };
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = (event: any) => {
     const { active, over } = event;
 
     if (active.id !== over.id) {
@@ -147,15 +146,15 @@ export default function ProductForm() {
     }
   };
 
-  const handleLabelChange = (id, newLabel) => {
+  const handleLabelChange = (id: string, newLabel: string) => {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, label: newLabel } : item)));
   };
 
-  const removeItem = (id) => {
+  const removeItem = (id: string) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (items.length === 0) {
@@ -163,32 +162,18 @@ export default function ProductForm() {
       return;
     }
 
-    const rawToken = localStorage.getItem("token");
-    if (!rawToken || rawToken === null || rawToken === "undefined") {
-      await alertError("Sesi anda telah berakhir (Token hilang).");
-      navigate("/admin/login");
-      return;
-    }
+      // Token fetching logic removed as apiClient handles it automatically
+      setIsLoading(true);
 
-    let validToken = rawToken;
-    try {
-      validToken = JSON.parse(rawToken);
-    } catch (e) {
-      console.log(e);
-      validToken = rawToken;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const formData = new FormData();
+      try {
+        const formData = new FormData();
       formData.append("name", name);
       formData.append("price", price);
       formData.append("description", description);
 
       // Append Images & Labels
       // Kita loop items yang sudah urut sesuai tampilan
-      const finalLabels = [];
+      const finalLabels: string[] = [];
 
       items.forEach((item) => {
         formData.append("images", item.file);
@@ -202,8 +187,9 @@ export default function ProductForm() {
         formData.append("trakteer_link", trakteerLink.trim());
       }
 
-      const response = await createProduct(validToken, formData);
-      const responseBody = await response.json();
+      const { response, error } = await api.POST("/products", {
+        body: formData as any,
+      });
 
       if (response.status === 401 || response.status === 403) {
         await alertError("Sesi kadaluarsa. Silakan login kembali.");
@@ -216,7 +202,7 @@ export default function ProductForm() {
         await alertSuccess("Produk berhasil dibuat!");
         navigate("/admin/products");
       } else {
-        await alertError(responseBody.message || "Gagal upload");
+        await alertError((error as any)?.message || "Gagal upload");
       }
     } catch (error) {
       console.error(error);

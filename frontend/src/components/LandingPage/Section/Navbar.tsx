@@ -17,7 +17,7 @@ export const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleNavigation = (id) => {
+  const handleNavigation = (id: string) => {
     setIsMobileMenuOpen(false);
 
     if (location.pathname === "/") {

@@ -21,7 +21,7 @@ export default function LayoutAdmin() {
   const baseStyle = "flex items-center gap-3 py-3 px-4 rounded-lg transition-all duration-200 mb-1";
 
   // Fungsi helper untuk class NavLink
-  const navLinkClass = ({ isActive }) =>
+  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `${baseStyle} ${
       isActive
         ? "bg-[#8da399] text-[#fdfcf8] font-bold shadow-md" // Style saat Aktif

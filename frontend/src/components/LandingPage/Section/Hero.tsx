@@ -1,9 +1,9 @@
 // gilangages/lumasticker/lumasticker-main/frontend/src/components/LandingPage/Section/Hero.jsx
 
-import { Ghost, Moon, Eye, CloudRain, Zap, Fingerprint, Coffee, Star, Fish } from "lucide-react";
+import { Ghost, CloudRain, Zap, Fingerprint, Coffee, Star } from "lucide-react";
 
 export const Hero = () => {
-  const scrollToSection = (id) => {
+  const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });

@@ -1,6 +1,6 @@
 // frontend/src/components/LandingPage/FloatingWhatsAppButton.jsx
 
-import React from "react";
+
 
 export const FloatingWhatsAppButton = () => {
   return (

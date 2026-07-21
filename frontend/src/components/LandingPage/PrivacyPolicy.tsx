@@ -1,5 +1,5 @@
 // frontend/src/components/LandingPage/PrivacyPolicy.jsx
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Navbar } from "./Section/Navbar";
 import { Footer } from "./Section/Footer";
 import { FloatingWhatsAppButton } from "./FloatingWhatsAppButton";

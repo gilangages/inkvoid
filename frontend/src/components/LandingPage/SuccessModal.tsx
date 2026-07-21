@@ -1,6 +1,11 @@
-import { Check, Mail, Heart } from "lucide-react"; // X tidak dipakai, dihapus aja biar bersih
+import { Check, Mail, Heart } from "lucide-react"; 
 
-export const SuccessModal = ({ isOpen, onClose }) => {
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const SuccessModal = ({ isOpen, onClose }: Props) => {
   if (!isOpen) return null;
 
   return (

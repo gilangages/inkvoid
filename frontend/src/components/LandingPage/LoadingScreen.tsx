@@ -1,14 +1,30 @@
 // frontend/src/components/LandingPage/LoadingScreen.jsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { AlertCircle, RefreshCw, ArrowRight } from "lucide-react";
 
-export const LoadingScreen = ({ isLoading, isError, fetchComplete, onComplete, onContinue, onRetry }) => {
+interface LoadingScreenProps {
+  isLoading: boolean;
+  isError: boolean;
+  fetchComplete: boolean;
+  onComplete: () => void;
+  onContinue: () => void;
+  onRetry: () => void;
+}
+
+export const LoadingScreen = ({
+  isLoading,
+  isError,
+  fetchComplete,
+  onComplete,
+  onContinue,
+  onRetry,
+}: LoadingScreenProps) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     if (!isLoading) return;
 
-    let interval;
+    let interval: number | undefined;
 
     if (!fetchComplete) {
       // Simulate loading progress from 0 to 90
@@ -83,7 +99,8 @@ export const LoadingScreen = ({ isLoading, isError, fetchComplete, onComplete, o
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="text-[#8287ac] font-mono font-bold text-xl tracking-tighter">
-                  {Math.floor(progress)}<span className="text-sm">%</span>
+                  {Math.floor(progress)}
+                  <span className="text-sm">%</span>
                 </span>
               </div>
             </div>
