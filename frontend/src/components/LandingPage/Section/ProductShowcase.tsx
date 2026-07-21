@@ -3,7 +3,15 @@
 import { ProductCard } from "./ProductCard";
 import { Sparkles, Loader2 } from "lucide-react";
 
-export const ProductShowcase = ({ products, loading, onBuy }) => {
+import type { components } from "../../../types/api";
+
+interface ProductShowcaseProps {
+  products: components["schemas"]["Product"][];
+  loading: boolean;
+  onBuy: (product: components["schemas"]["Product"]) => void;
+}
+
+export const ProductShowcase = ({ products, loading, onBuy }: ProductShowcaseProps) => {
   return (
     <main id="products" className="max-w-6xl mx-auto px-6 py-24 scroll-mt-8 md:scroll-mt-2">
       {/* HEADER: Minimalis & Langsung */}

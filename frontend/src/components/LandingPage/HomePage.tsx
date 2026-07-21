@@ -1,8 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useLocation } from "react-router";
-import { getAllProducts } from "../../lib/api/ProductApi";
-import { purchaseProduct } from "../../lib/api/PaymentApi";
-
+import api from "../../lib/api/apiClient";
+import type { components } from "../../types/api";
 // Import Components
 import { Navbar } from "./Section/Navbar";
 import { Hero } from "./Section/Hero";
@@ -19,10 +18,8 @@ import { MeetTheArtist } from "./Section/MeetTheArtist";
 import { FloatingWhatsAppButton } from "./FloatingWhatsAppButton";
 // Import Loading Screen Baru
 import { LoadingScreen } from "./LoadingScreen";
-import { visitStats } from "../../lib/api/VisitApi";
-
 export const HomePage = () => {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<components["schemas"]["Product"][]>([]);
 
   // State untuk Loading Awal (Full Screen)
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -38,18 +35,18 @@ export const HomePage = () => {
   const location = useLocation();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState<components["schemas"]["Product"] | null>(null);
 
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [isErrorOpen, setIsErrorOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const showError = (msg) => {
+  const showError = (msg: string) => {
     setErrorMessage(msg);
     setIsErrorOpen(true);
   };
 
-  const handleOpenModal = (product) => {
+  const handleOpenModal = (product: components["schemas"]["Product"]) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
@@ -65,18 +62,15 @@ export const HomePage = () => {
 
       console.log("Memulai pengambilan data... Menunggu server bangun...");
 
-      const response = await getAllProducts(); // <--- Frontend akan menunggu disini, berapapun lamanya
+      const { data, error } = await api.GET("/products");
 
-      // Jika response sudah kembali, baru kita cek statusnya
-      if (!response.ok) {
+      if (error) {
         // Jika server merespon dengan error (misal 429 Too Many Requests atau 500)
         throw new Error("Gagal memuat data / Server Limit");
       }
 
-      const json = await response.json();
-
-      if (json.data && json.data.length > 0) {
-        setProducts(json.data);
+      if (data && (data as any).data && (data as any).data.length > 0) {
+        setProducts((data as any).data);
       } else {
         setProducts([]);
       }
@@ -117,7 +111,9 @@ export const HomePage = () => {
           localStorage.setItem("visitor_id", visitorId);
         }
 
-        const response = await visitStats(visitorId);
+        const { response } = await api.POST("/visits", {
+          body: { visitor_id: visitorId },
+        });
 
         if (response.ok) {
           // Visit recorded/updated successfully (silent)
@@ -216,38 +212,39 @@ export const HomePage = () => {
   );
 
   // --- LOGIC LAMA KAMU ---
+  // --- LOGIC LAMA KAMU ---
   // Pastikan function ini ada di dalam component HomePage sebelum return
-  async function handleProcessPayment(product) {
+  async function handleProcessPayment(product: components["schemas"]["Product"]) {
     setIsModalOpen(false);
 
     try {
-      const res = await purchaseProduct({
-        product_id: product.id,
-        customer_name: "Guest WhatsApp",
-        customer_email: product.buyerEmail,
+      const { response, error } = await api.POST("/payment/purchase", {
+        body: {
+          product_id: product.id || 0,
+          customer_name: "Guest WhatsApp",
+          customer_email: (product as any).buyerEmail || "",
+        },
       });
 
-      const data = await res.json();
-
-      if (data.success) {
+      if (response.ok) {
         const adminNumber = "6283824032460";
         const message = `Halo, saya ingin mengambil arsip karya ini:
 
 Karya: *${product.name}*
-Email: *${product.buyerEmail}*
+Email: *${(product as any).buyerEmail}*
 
 Berikut bukti transfernya. Terima kasih.`.trim();
 
         const waUrl = `https://wa.me/${adminNumber}?text=${encodeURIComponent(message)}`;
         window.open(waUrl, "_blank");
       } else {
-        showError("Gagal membuat pesanan: " + (data.message || "Unknown Error"));
+        showError("Gagal membuat pesanan: " + ((error as any)?.message || "Unknown Error"));
       }
     } catch (error) {
       console.error("Error Sistem:", error);
       const adminNumber = "6283824032460";
       const message = `Halo, ada kendala sistem saat ingin mengambil arsip ${product.name}.
-Email: ${product.buyerEmail || "-"}
+Email: ${(product as any).buyerEmail || "-"}
 (Mohon bantu proses manual)`;
 
       window.open(`https://wa.me/${adminNumber}?text=${encodeURIComponent(message)}`, "_blank");

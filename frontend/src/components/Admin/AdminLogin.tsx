@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useLocalStorage } from "react-use";
 import { alertError } from "../../lib/alert";
-import { adminLogin } from "../../lib/api/AdminApi";
+import api from "../../lib/api/apiClient";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -11,21 +11,20 @@ export default function AdminLogin() {
   // Simpan token (mock token)
   const [_, setToken] = useLocalStorage("token", "");
 
-  async function handleLogin(e) {
+  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // LOGIKA LOGIN SEMENTARA (Hardcode) - Ganti dengan API call nanti
-    const response = await adminLogin({ email, password });
-    const responseBody = await response.json();
-    console.log(responseBody);
 
-    if (response.status === 200) {
-      const token = responseBody.token;
-      setToken(token);
+    const { data, error } = await api.POST("/admin/login", {
+      body: { email, password },
+    });
+
+    if (error) {
+      await alertError((error as any)?.message || "Gagal login");
+    } else if (data) {
+      setToken(data.token);
       await navigate({
         pathname: "/admin/dashboard",
       });
-    } else {
-      await alertError(responseBody.message);
     }
   }
 

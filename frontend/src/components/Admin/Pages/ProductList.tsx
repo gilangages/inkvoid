@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { bulkDeleteProducts, getAdminProducts, productDelete, toggleProductStatus } from "../../../lib/api/ProductApi";
+import api from "../../../lib/api/apiClient";
+import type { components } from "../../../types/api";
+
+type Product = components["schemas"]["Product"];
 import { Trash2, CheckSquare, Square, RefreshCw, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { alertConfirm, alertError, alertSuccess } from "../../../lib/alert";
 import AdminProductCard from "../Card/AdminProductCard";
@@ -9,8 +12,8 @@ import EditProductModal from "./EditProductModal";
 import { useNavigate } from "react-router";
 
 export default function ProductList() {
-  const [token, setToken] = useLocalStorage("token", "");
-  const [products, setProducts] = useState([]);
+  const [, setToken] = useLocalStorage("token", "");
+  const [products, setProducts] = useState<Product[]>([]);
   const [search, _setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -18,29 +21,29 @@ export default function ProductList() {
 
   // --- LOGIC MODAL & CAROUSEL ---
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentImages, setCurrentImages] = useState([]);
+  const [currentImages, setCurrentImages] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // --- LOGIC SWIPE (Touch) ---
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [reload, setReload] = useState(false);
 
   //Edit
-  const [editingProduct, setEditingProduct] = useState(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   //bulkDelete
-  const [selectedIds, setSelectedIds] = useState([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   const minSwipeDistance = 50;
 
-  const onTouchStart = (e) => {
+  const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
   };
 
-  const onTouchMove = (e) => {
+  const onTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
     setTouchEnd(e.targetTouches[0].clientX);
   };
 
@@ -54,13 +57,16 @@ export default function ProductList() {
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const rawToken = localStorage.getItem("token");
-      let validToken = rawToken ? JSON.parse(rawToken) : "";
-
-      const response = await getAdminProducts(validToken);
-      const res = await response.json();
-      if (res.success) setProducts(res.data);
-      else setProducts([]);
+      const { response } = await api.GET("/products/admin/list");
+      const resData = await response.json();
+      if (resData?.success && Array.isArray(resData.data)) {
+        setProducts(resData.data as Product[]);
+      } else {
+        setProducts([]);
+        if (!response.ok) {
+          alertError(resData?.message || "Gagal mengambil data produk");
+        }
+      }
     } catch (error) {
       console.error("Gagal ambil produk", error);
       alertError("Gagal mengambil data produk");
@@ -70,19 +76,17 @@ export default function ProductList() {
   };
 
   // NEW: Handler Toggle
-  const handleToggleStatus = async (id) => {
-    const rawToken = localStorage.getItem("token");
-    let validToken = rawToken ? JSON.parse(rawToken) : "";
-
+  const handleToggleStatus = async (id: number) => {
     try {
-      const response = await toggleProductStatus(validToken, id);
-      const res = await response.json();
-      if (response.ok) {
-        await alertSuccess(res.message);
+      const { data, error } = await api.PATCH("/products/{id}/status", {
+        params: { path: { id } },
+      });
+      if (data && !error) {
+        await alertSuccess((data as any)?.message || "Status berhasil diubah");
         // Update state lokal langsung agar UI responsif tanpa reload
         setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, is_active: p.is_active === 1 ? 0 : 1 } : p)));
       } else {
-        alertError(res.message);
+        alertError((error as any)?.message || "Gagal mengubah status");
       }
     } catch (e) {
       console.error(e);
@@ -90,32 +94,19 @@ export default function ProductList() {
     }
   };
 
-  const toggleSelect = (id) => {
+  const toggleSelect = (id: number) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   };
 
   const handleBulkDelete = async () => {
     if (!(await alertConfirm(`Hapus ${selectedIds.length} produk sekaligus?`))) return;
 
-    const rawToken = localStorage.getItem("token");
-    if (!rawToken || rawToken === null || rawToken === "undefined") {
-      await alertError("Sesi anda telah berakhir (Token hilang).");
-      navigate("/admin/login");
-      return;
-    }
-
-    let validToken = rawToken;
-    try {
-      validToken = JSON.parse(rawToken);
-    } catch (e) {
-      console.log(e);
-      validToken = rawToken;
-    }
-
     setIsLoading(true);
     try {
-      const response = await bulkDeleteProducts(validToken || token, selectedIds);
-      const responseBody = await response.json();
+      const { response } = await api.POST("/products/bulk-delete", {
+        body: { ids: selectedIds } as any,
+      });
+      const resData = await response.json();
 
       if (response.status === 401 || response.status === 403) {
         await alertError("Akses ditolak. Silakan login ulang.");
@@ -125,10 +116,12 @@ export default function ProductList() {
       }
 
       if (response.ok) {
-        await alertSuccess(responseBody.message);
+        await alertSuccess(resData?.message || "Produk berhasil dihapus");
         setSelectedIds([]);
         setIsSelectionMode(false);
         setReload(!reload);
+      } else {
+        alertError(resData?.message || "Gagal menghapus produk");
       }
     } catch (error) {
       console.log(error);
@@ -142,7 +135,7 @@ export default function ProductList() {
     if (selectedIds.length === filteredProducts.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(filteredProducts.map((p) => p.id));
+      setSelectedIds(filteredProducts.map((p) => p.id!).filter(Boolean));
     }
   };
 
@@ -159,12 +152,12 @@ export default function ProductList() {
     setIsLoading(false);
   };
 
-  const handleViewImage = (product) => {
-    let images = [];
+  const handleViewImage = (product: Product) => {
+    let images: string[] = [];
 
     // Cek apakah product.images ada dan valid
     if (product.images && Array.isArray(product.images) && product.images.length > 0) {
-      images = product.images.map((img) => {
+      images = product.images.map((img: any) => {
         // [FIX] Jika img adalah object (format baru), ambil property .url
         if (typeof img === "object" && img !== null) {
           return img.url;
@@ -184,39 +177,26 @@ export default function ProductList() {
   const handleNextImage = () => setCurrentIndex((prev) => (prev + 1) % currentImages.length);
   const handlePrevImage = () => setCurrentIndex((prev) => (prev === 0 ? currentImages.length - 1 : prev - 1));
 
-  const onNextClick = (e) => {
+  const onNextClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     handleNextImage();
   };
-  const onPrevClick = (e) => {
+  const onPrevClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     handlePrevImage();
   };
 
-  const handleEdit = (product) => setEditingProduct(product);
+  const handleEdit = (product: Product) => setEditingProduct(product);
   const handleEditSuccess = () => setReload(!reload);
 
-  async function handleDelete(id) {
+  async function handleDelete(id: number) {
     if (!(await alertConfirm("Apakah kamu yakin mau menghapus produk ini?"))) return;
 
-    const rawToken = localStorage.getItem("token");
-    if (!rawToken || rawToken === null || rawToken === "undefined") {
-      await alertError("Sesi anda telah berakhir (Token hilang).");
-      navigate("/admin/login");
-      return;
-    }
-
-    let validToken = rawToken;
     try {
-      validToken = JSON.parse(rawToken);
-    } catch (e) {
-      console.log(e);
-      validToken = rawToken;
-    }
-
-    try {
-      const response = await productDelete(validToken, id);
-      const responseBody = await response.json();
+      const { response } = await api.DELETE("/products/{id}", {
+        params: { path: { id } },
+      });
+      const resData = await response.json();
 
       if (response.status === 401 || response.status === 403) {
         await alertError("Sesi kadaluarsa. Silakan login kembali.");
@@ -226,13 +206,10 @@ export default function ProductList() {
       }
 
       if (response.ok) {
-        // Logic pesan sekarang dinamis sesuai respon cerdas dari backend tadi
-        // Kalo bersih: "Produk berhasil dihapus!"
-        // Kalo soft delete: "Produk diarsipkan..."
-        await alertSuccess(responseBody.message);
+        await alertSuccess(resData?.message || "Produk berhasil dihapus");
         setReload(!reload);
       } else {
-        alertError(responseBody.message || "Terjadi kesalahan saat menghapus.");
+        alertError(resData?.message || "Terjadi kesalahan saat menghapus.");
       }
     } catch (error) {
       console.error(error);
@@ -244,7 +221,7 @@ export default function ProductList() {
     fetchProducts();
   }, [reload]);
 
-  const filteredProducts = products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredProducts = products.filter((p) => p.name?.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="max-w-6xl mx-auto animate-slide-up relative px-4 pb-32">
@@ -276,11 +253,11 @@ export default function ProductList() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product) => (
             <AdminProductCard
-              key={product.id}
+              key={product.id!}
               product={product}
               isSelectionMode={isSelectionMode}
-              isSelected={selectedIds.includes(product.id)}
-              onSelect={() => toggleSelect(product.id)}
+              isSelected={selectedIds.includes(product.id!)}
+              onSelect={() => toggleSelect(product.id!)}
               onEdit={handleEdit}
               onDelete={handleDelete}
               onViewImage={handleViewImage}

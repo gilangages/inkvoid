@@ -1,6 +1,21 @@
 //
 import { Edit, EyeOff, Eye, Trash2, Maximize2, Check } from "lucide-react";
 
+import type { components } from "../../../types/api";
+
+type Product = components["schemas"]["Product"];
+
+interface AdminProductCardProps {
+  product: Product;
+  onEdit: (product: Product) => void;
+  onDelete: (id: number) => void;
+  onViewImage: (product: Product) => void;
+  isSelected: boolean;
+  onSelect: () => void;
+  isSelectionMode: boolean;
+  onToggleStatus: (id: number) => void;
+}
+
 export default function AdminProductCard({
   product,
   onEdit,
@@ -10,8 +25,8 @@ export default function AdminProductCard({
   onSelect,
   isSelectionMode,
   onToggleStatus,
-}) {
-  const formattedPrice = parseInt(product.price).toLocaleString("id-ID");
+}: AdminProductCardProps) {
+  const formattedPrice = (product.price ?? 0).toLocaleString("id-ID");
   const isActive = product.is_active === 1;
 
   return (
@@ -27,7 +42,7 @@ export default function AdminProductCard({
       {/* Checkbox Selection Mode */}
       {isSelectionMode && (
         <div
-          onClick={(e) => {
+          onClick={(e: React.MouseEvent) => {
             e.stopPropagation();
             onSelect();
           }}
@@ -50,7 +65,7 @@ export default function AdminProductCard({
           className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
             isSelected ? "opacity-75" : "opacity-100"
           }`}
-          onError={(e) => (e.target.src = "https://placehold.co/400?text=No+Image")}
+          onError={(e: any) => (e.target.src = "https://placehold.co/400?text=No+Image")}
         />
 
         {!isSelectionMode && (
@@ -85,7 +100,7 @@ export default function AdminProductCard({
         }`}>
         {/* Tombol Toggle Status */}
         <button
-          onClick={() => onToggleStatus(product.id)}
+          onClick={() => onToggleStatus(product.id!)}
           className={`p-2 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold ${
             isActive
               ? "bg-green-100 text-green-700 hover:bg-green-200"
@@ -105,9 +120,9 @@ export default function AdminProductCard({
 
         {/* Tombol Delete (TETAP AKTIF) */}
         <button
-          onClick={(e) => {
+          onClick={(e: React.MouseEvent) => {
             e.stopPropagation();
-            onDelete(product.id);
+            onDelete(product.id!);
           }}
           className="col-span-2 flex items-center justify-center gap-1 py-2 text-sm font-bold text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors">
           <Trash2 size={16} /> Hapus

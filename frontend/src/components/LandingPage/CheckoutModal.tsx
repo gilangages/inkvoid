@@ -6,22 +6,30 @@ import {
   Image as ImageIcon,
   Coffee,
 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from "react";
 import { Link } from "react-router";
 import ReactMarkdown from "react-markdown";
+import type { components } from "../../types/api";
 
-export const CheckoutModal = ({ isOpen, onClose, product }) => {
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  product: components["schemas"]["Product"] | null;
+  onSubmit?: (product: components["schemas"]["Product"]) => Promise<void>;
+}
+
+export const CheckoutModal = ({ isOpen, onClose, product, onSubmit: _onSubmit }: Props) => {
   // --- STATE (Logic Tetap) ---
   const [currentImgIdx, setCurrentImgIdx] = useState(0);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
 
-  const touchStartX = useRef(null);
-  const touchEndX = useRef(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
 
   // --- NORMALISASI DATA IMAGES (Logic Tetap) ---
   const getNormalizedImages = () => {
     if (!product) return [];
-    let rawImages = [];
+    let rawImages: any[] = [];
     if (product.images && Array.isArray(product.images) && product.images.length > 0) {
       rawImages = product.images;
     } else if (product.image_url) {
@@ -38,15 +46,15 @@ export const CheckoutModal = ({ isOpen, onClose, product }) => {
   const images = getNormalizedImages();
   const currentImage = images[currentImgIdx];
 
-  const nextImage = (e) => {
-    if (e) e.stopPropagation();
+  const nextImage = (e?: ReactMouseEvent | KeyboardEvent) => {
+    if (e && 'stopPropagation' in e) e.stopPropagation();
     if (images.length > 0) {
       setCurrentImgIdx((prev) => (prev + 1) % images.length);
     }
   };
 
-  const prevImage = (e) => {
-    if (e) e.stopPropagation();
+  const prevImage = (e?: ReactMouseEvent | KeyboardEvent) => {
+    if (e && 'stopPropagation' in e) e.stopPropagation();
     if (images.length > 0) {
       setCurrentImgIdx((prev) => (prev - 1 + images.length) % images.length);
     }
@@ -56,7 +64,7 @@ export const CheckoutModal = ({ isOpen, onClose, product }) => {
   useEffect(() => {
     if (isOpen) {
       window.history.pushState({ modalOpen: true }, "", window.location.href);
-      const handlePopState = (event) => {
+      const handlePopState = (_event: PopStateEvent) => {
         onClose();
       };
       window.addEventListener("popstate", handlePopState);
@@ -71,10 +79,10 @@ export const CheckoutModal = ({ isOpen, onClose, product }) => {
 
   // --- KEYBOARD NAV (Logic Tetap) ---
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (!isZoomOpen) return;
-      if (e.key === "ArrowRight") nextImage();
-      if (e.key === "ArrowLeft") prevImage();
+      if (e.key === "ArrowRight") nextImage(e);
+      if (e.key === "ArrowLeft") prevImage(e);
       if (e.key === "Escape") setIsZoomOpen(false);
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -84,10 +92,10 @@ export const CheckoutModal = ({ isOpen, onClose, product }) => {
   if (!isOpen || !product) return null;
 
   // --- TOUCH HANDLERS (Logic Tetap) ---
-  const handleTouchStart = (e) => {
+  const handleTouchStart = (e: ReactTouchEvent) => {
     touchStartX.current = e.targetTouches[0].clientX;
   };
-  const handleTouchMove = (e) => {
+  const handleTouchMove = (e: ReactTouchEvent) => {
     touchEndX.current = e.targetTouches[0].clientX;
   };
   const handleTouchEnd = () => {
@@ -103,10 +111,10 @@ export const CheckoutModal = ({ isOpen, onClose, product }) => {
   // Dihapus karena fokus pembelian hanya melalui Trakteer
 
   const markdownComponents = {
-    strong: ({ node, ...props }) => <span className="font-bold text-[#E0D7D7]" {...props} />,
-    ul: ({ node, ...props }) => <ul className="list-disc pl-4 space-y-1 my-3 text-[13px]" {...props} />,
-    li: ({ node, ...props }) => <li className="pl-1" {...props} />,
-    p: ({ node, ...props }) => <p className="mb-3 font-light leading-relaxed" {...props} />,
+    strong: ({ node, ...props }: any) => <span className="font-bold text-[#E0D7D7]" {...props} />,
+    ul: ({ node, ...props }: any) => <ul className="list-disc pl-4 space-y-1 my-3 text-[13px]" {...props} />,
+    li: ({ node, ...props }: any) => <li className="pl-1" {...props} />,
+    p: ({ node, ...props }: any) => <p className="mb-3 font-light leading-relaxed" {...props} />,
   };
 
   return (
@@ -137,7 +145,7 @@ export const CheckoutModal = ({ isOpen, onClose, product }) => {
                 src={currentImage?.url}
                 alt={product.name}
                 className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700"
-                onError={(e) => (e.target.src = "https://placehold.co/600x600?text=Fragment+Not+Found")}
+                onError={(e) => ((e.target as HTMLImageElement).src = "https://placehold.co/600x600?text=Fragment+Not+Found")}
               />
 
               {currentImage?.label && (
@@ -254,7 +262,7 @@ export const CheckoutModal = ({ isOpen, onClose, product }) => {
                       Total_Bayar
                     </span>
                     <span className="text-3xl font-black text-[#E0D7D7] tracking-tighter">
-                      Rp {parseInt(product.price).toLocaleString("id-ID")}
+                      Rp {(product.price ?? 0).toLocaleString("id-ID")}
                     </span>
                   </div>
 

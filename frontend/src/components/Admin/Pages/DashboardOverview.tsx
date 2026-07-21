@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getAllProducts } from "../../../lib/api/ProductApi";
+import api from "../../../lib/api/apiClient";
 import {
   ShoppingBag,
   DollarSign,
@@ -16,12 +16,6 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Link } from "react-router";
-import {
-  visitStatsAdmin,
-  getVisitorList,
-  deleteVisitor,
-  deleteAllVisitors,
-} from "../../../lib/api/VisitApi";
 import { useLocalStorage } from "react-use";
 import { alertConfirm, alertSuccess, alertError } from "../../../lib/alert";
 import { useNavigate } from "react-router";
@@ -34,7 +28,7 @@ export default function DashboardOverview() {
   const [visitStats, setVisitStats] = useState({ total_views: 0, unique_visitors: 0 });
 
   // Visitor List State
-  const [visitors, setVisitors] = useState([]);
+  const [visitors, setVisitors] = useState<any[]>([]);
   const [visitorLoading, setVisitorLoading] = useState(true);
   const [pagination, setPagination] = useState({
     current_page: 1,
@@ -46,16 +40,7 @@ export default function DashboardOverview() {
   const [_, setToken] = useLocalStorage("token", "");
   const navigate = useNavigate();
 
-  // Helper: Ambil token valid dari localStorage
-  function getValidToken() {
-    const rawToken = localStorage.getItem("token");
-    if (!rawToken || rawToken === "null" || rawToken === "undefined") return "";
-    try {
-      return JSON.parse(rawToken);
-    } catch {
-      return rawToken;
-    }
-  }
+  // Helper removed, using apiClient middleware
 
   // Helper: Handle 401/403 (token expired)
   async function handleAuthError() {
@@ -68,8 +53,10 @@ export default function DashboardOverview() {
   async function fetchVisitors(page = 1) {
     setVisitorLoading(true);
     try {
-      const token = getValidToken();
-      const response = await getVisitorList(token, page, 10);
+      const { response } = await api.GET("/visits/list", {
+        params: { query: { page, limit: 10 } },
+      });
+      const body = await response.json();
 
       if (response.status === 401 || response.status === 403) {
         await handleAuthError();
@@ -77,7 +64,6 @@ export default function DashboardOverview() {
       }
 
       if (response.ok) {
-        const body = await response.json();
         setVisitors(body.data || []);
         setPagination(body.pagination || pagination);
       }
@@ -89,19 +75,19 @@ export default function DashboardOverview() {
   }
 
   // Hapus satu visitor
-  async function handleDeleteVisitor(id) {
+  async function handleDeleteVisitor(id: number) {
     if (!(await alertConfirm("Yakin ingin menghapus data pengunjung ini?"))) return;
 
     try {
-      const token = getValidToken();
-      const response = await deleteVisitor(token, id);
+      const { response } = await api.DELETE("/visits/{id}", {
+        params: { path: { id } },
+      });
+      const body = await response.json();
 
       if (response.status === 401 || response.status === 403) {
         await handleAuthError();
         return;
       }
-
-      const body = await response.json();
 
       if (response.ok) {
         await alertSuccess(body.message);
@@ -128,15 +114,13 @@ export default function DashboardOverview() {
       return;
 
     try {
-      const token = getValidToken();
-      const response = await deleteAllVisitors(token);
+      const { response } = await api.DELETE("/visits/all");
+      const body = await response.json();
 
       if (response.status === 401 || response.status === 403) {
         await handleAuthError();
         return;
       }
-
-      const body = await response.json();
 
       if (response.ok) {
         await alertSuccess(body.message);
@@ -154,8 +138,7 @@ export default function DashboardOverview() {
   // Fetch visit stats (dipindah ke function sendiri agar bisa dipanggil ulang)
   async function fetchVisitStats() {
     try {
-      const token = getValidToken();
-      const response = await visitStatsAdmin(token);
+      const { response } = await api.GET("/visits/stats");
 
       if (response.ok) {
         const responseBody = await response.json();
@@ -168,13 +151,13 @@ export default function DashboardOverview() {
 
   useEffect(() => {
     // 1. Fetch Produk
-    getAllProducts().then(async (response) => {
+    api.GET("/products").then(async ({ response }) => {
       try {
         const res = await response.json();
         if (res.success) {
           const products = res.data;
           const total = products.length;
-          const totalPrice = products.reduce((acc, curr) => acc + parseInt(curr.price || 0), 0);
+          const totalPrice = products.reduce((acc: number, curr: any) => acc + parseInt(curr.price || 0), 0);
           setStats({ total, totalPrice });
         }
       } catch (err) {
@@ -191,7 +174,7 @@ export default function DashboardOverview() {
   }, []);
 
   // Helper: Device icon
-  const DeviceIcon = ({ type }) => {
+  const DeviceIcon = ({ type }: { type: string }) => {
     if (type === "Mobile") return <Smartphone size={14} className="text-blue-500" />;
     return <Monitor size={14} className="text-gray-600" />;
   };
@@ -320,13 +303,13 @@ export default function DashboardOverview() {
               <tbody className="divide-y-2 divide-[#EAE7DF]">
                 {visitorLoading ? (
                   <tr>
-                    <td colSpan="8" className="p-10 text-center text-[#6B5E51]">
+                    <td colSpan={8} className="p-10 text-center text-[#6B5E51]">
                       Memuat data...
                     </td>
                   </tr>
                 ) : visitors.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="p-10 text-center text-[#6B5E51]">
+                    <td colSpan={8} className="p-10 text-center text-[#6B5E51]">
                       Belum ada data pengunjung.
                     </td>
                   </tr>

@@ -8,7 +8,7 @@ export const Footer = () => {
   const location = useLocation();
 
   // Navigation logic uses router state to scroll after LoadingScreen completes on HomePage
-  const handleNavigation = (id) => {
+  const handleNavigation = (id: string) => {
     if (location.pathname === "/") {
       const element = document.getElementById(id);
       if (element) element.scrollIntoView({ behavior: "smooth" });

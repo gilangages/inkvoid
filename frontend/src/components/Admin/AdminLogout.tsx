@@ -1,24 +1,22 @@
 import { useEffectOnce, useLocalStorage } from "react-use";
-import { adminLogout } from "../../lib/api/AdminApi";
+import api from "../../lib/api/apiClient";
 import { alertError } from "../../lib/alert";
 import { useNavigate } from "react-router";
 
 export default function AdminLogout() {
-  const [token, _, removeToken] = useLocalStorage("token", "");
+  const [_, __, removeToken] = useLocalStorage("token", "");
   const navigate = useNavigate();
 
   async function handleLogout() {
-    const response = await adminLogout(token);
-    const responseBody = await response.json();
-    console.log(responseBody);
+    const { error } = await api.DELETE("/admin/logout");
 
-    if (response.status === 200) {
+    if (error) {
+      await alertError((error as any)?.message || "Gagal logout");
+    } else {
       removeToken();
       await navigate({
         pathname: "/admin/login",
       });
-    } else {
-      await alertError(responseBody.message);
     }
   }
 

@@ -1,25 +1,21 @@
 import { useState } from "react";
 import { ShoppingBag, User, Mail, Calendar, Tag, XCircle, CheckCircle } from "lucide-react";
 import { alertConfirm, alertError, alertSuccess } from "../../../lib/alert";
-import { changeStatusPaymentByAdmin, getAllTransactions } from "../../../lib/api/PaymentApi";
+import api from "../../../lib/api/apiClient";
 import { useEffectOnce, useLocalStorage } from "react-use";
 import { useNavigate } from "react-router";
 
 export default function OrderHistory() {
   const [_, setToken] = useLocalStorage("token", "");
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   async function fetchAllTransactions() {
     setLoading(true);
     try {
-      const rawToken = localStorage.getItem("token");
-      let validToken = rawToken ? JSON.parse(rawToken) : "";
-
-      const response = await getAllTransactions(validToken);
+      const { response } = await api.GET("/payment/admin/transactions");
       const responseBody = await response.json();
-      console.log(responseBody);
 
       if (response.status === 401 || response.status === 403) {
         await alertError("Sesi anda telah berakhir. Silakan login kembali.");
@@ -40,7 +36,7 @@ export default function OrderHistory() {
     }
   }
 
-  const getStatusStyle = (status) => {
+  const getStatusStyle = (status: string) => {
     switch (status.toLowerCase()) {
       case "success":
         return "bg-green-100 text-green-700 border-green-200";
@@ -51,7 +47,7 @@ export default function OrderHistory() {
     }
   };
 
-  async function handleUpdateStatus(orderId, newStatus) {
+  async function handleUpdateStatus(orderId: string, newStatus: string) {
     // Tentukan pesan konfirmasi berdasarkan status
     const actionName = newStatus === "success" ? "TERIMA (LUNAS)" : "TOLAK (BATAL)";
 
@@ -59,25 +55,12 @@ export default function OrderHistory() {
       return;
     }
 
-    const rawToken = localStorage.getItem("token");
-    if (!rawToken || rawToken === null || rawToken === "undefined") {
-      await alertError("Sesi anda telah berakhir (Token hilang).");
-      navigate("/admin/login");
-      return;
-    }
-
-    let validToken = rawToken;
     try {
-      validToken = JSON.parse(rawToken);
-    } catch (e) {
-      console.log(e);
-      validToken = rawToken;
-    }
-
-    try {
-      const response = await changeStatusPaymentByAdmin(validToken, { orderId, newStatus });
+      const { response } = await api.PUT("/payment/admin/transaction/{order_id}", {
+        params: { path: { order_id: orderId } },
+        body: { status: newStatus as any },
+      });
       const responseBody = await response.json();
-      console.log(responseBody);
 
       if (response.status === 401 || response.status === 403) {
         await alertError("Sesi kadaluarsa. Silakan login kembali.");
@@ -128,13 +111,13 @@ export default function OrderHistory() {
             <tbody className="divide-y-2 divide-[#EAE7DF]">
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="p-10 text-center text-[#6B5E51]">
+                  <td colSpan={5} className="p-10 text-center text-[#6B5E51]">
                     Memuat data...
                   </td>
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="p-10 text-center text-[#6B5E51]">
+                  <td colSpan={5} className="p-10 text-center text-[#6B5E51]">
                     Belum ada pesanan masuk.
                   </td>
                 </tr>
@@ -158,7 +141,7 @@ export default function OrderHistory() {
                       </div>
                     </td>
                     <td className="p-4 text-center font-black text-[#3E362E]">
-                      Rp {parseInt(order.amount).toLocaleString("id-ID")}
+                      Rp {parseInt(order.amount ?? 0).toLocaleString("id-ID")}
                     </td>
                     <td className="p-4 text-center">
                       <span
@@ -258,7 +241,7 @@ export default function OrderHistory() {
               <div className="flex justify-between items-center pt-2 border-t-2 border-[#EAE7DF]">
                 <span className="text-xs font-bold text-[#6B5E51] uppercase tracking-wider">Total Pembayaran</span>
                 <span className="text-lg font-black text-[#3E362E]">
-                  Rp {parseInt(order.amount).toLocaleString("id-ID")}
+                  Rp {parseInt(order.amount ?? 0).toLocaleString("id-ID")}
                 </span>
               </div>
               {order.status === "pending" && (
