@@ -23,7 +23,7 @@ if (isProduction) {
     params: {
       folder: "lumastore_products",
       allowed_formats: ["jpg", "png", "jpeg", "webp", "gif"],
-      transformation: [{ width: 1000, height: 1000, crop: "limit" }],
+      transformation: [{ width: 1000, height: 1000, crop: "limit", quality: "auto", fetch_format: "auto" }],
     },
   });
 } else {
