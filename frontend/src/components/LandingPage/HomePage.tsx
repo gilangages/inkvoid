@@ -18,6 +18,8 @@ import { MeetTheArtist } from "./Section/MeetTheArtist";
 import { FloatingWhatsAppButton } from "./FloatingWhatsAppButton";
 // Import Loading Screen Baru
 import { LoadingScreen } from "./LoadingScreen";
+import { useSWR1DayTTL } from "../../hooks/useSWR";
+
 export const HomePage = () => {
   const [products, setProducts] = useState<components["schemas"]["Product"][]>([]);
 
@@ -51,53 +53,34 @@ export const HomePage = () => {
     setIsModalOpen(true);
   };
 
-  // Fungsi fetch data yang dipisahkan agar bisa dipanggil ulang (Retry)
-  const fetchData = useCallback(async () => {
-    setIsInitialLoading(true);
-    setShowErrorScreen(false);
+  // SWR Fetcher
+  const fetcher = useCallback(async () => {
+    console.log("Memulai pengambilan data... Menunggu server bangun...");
+    const { data, error } = await api.GET("/products");
+    if (error) {
+      throw new Error("Gagal memuat data / Server Limit");
+    }
+    return (data as any)?.data || [];
+  }, []);
 
-    try {
-      // HAPUS timeoutPromise dan Promise.race
-      // Kita ganti dengan fetch biasa yang akan menunggu sampai browser/server merespon
+  // Gunakan 1-Day TTL Cache
+  const { data: cachedProducts, error: swrError, mutate: retryFetch } = useSWR1DayTTL<components["schemas"]["Product"][]>("homepage_products", fetcher);
 
-      console.log("Memulai pengambilan data... Menunggu server bangun...");
-
-      const { data, error } = await api.GET("/products");
-
-      if (error) {
-        // Jika server merespon dengan error (misal 429 Too Many Requests atau 500)
-        throw new Error("Gagal memuat data / Server Limit");
-      }
-
-      if (data && (data as any).data && (data as any).data.length > 0) {
-        setProducts((data as any).data);
-      } else {
-        setProducts([]);
-      }
-
-      // SUKSES: Jangan langsung matikan modal, tapi set fetch complete
+  // Sinkronisasi SWR ke State UI
+  useEffect(() => {
+    if (cachedProducts !== null) {
+      setProducts(cachedProducts);
       setFetchComplete(true);
-    } catch (err) {
-      console.error("Error fetching products:", err);
+      setComponentLoading(false);
+    } else if (swrError) {
+      console.error("Error fetching products:", swrError);
       setProducts([]);
-
-      // ERROR: Matikan loading, TAMPILKAN Error Screen
-      // Ini hanya akan terpanggil jika:
-      // 1. Internet user mati
-      // 2. Render merespon dengan error (limit habis/crash)
-      // 3. Browser user timeout (biasanya sangat lama, > 2 menit)
       setIsInitialLoading(false);
       setShowErrorScreen(true);
       setFetchComplete(false);
-    } finally {
       setComponentLoading(false);
     }
-  }, []);
-
-  // Panggil fetchData saat pertama kali render
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  }, [cachedProducts, swrError]);
 
   useEffect(() => {
     // Fungsi untuk mencatat kunjungan
@@ -166,7 +149,11 @@ export const HomePage = () => {
           isError={showErrorScreen}
           fetchComplete={fetchComplete}
           onComplete={handleLoadingComplete}
-          onRetry={fetchData}
+          onRetry={() => {
+            setIsInitialLoading(true);
+            setShowErrorScreen(false);
+            retryFetch();
+          }}
           onContinue={handleContinueAnyway}
         />
       )}
