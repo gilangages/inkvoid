@@ -14,8 +14,8 @@ export default function OrderHistory() {
   async function fetchAllTransactions() {
     setLoading(true);
     try {
-      const { response } = await api.GET("/payment/admin/transactions");
-      const responseBody = await response.json();
+      const { data, error, response } = await api.GET("/payment/admin/transactions");
+      const responseBody = (data || error) as any;
 
       if (response.status === 401 || response.status === 403) {
         await alertError("Sesi anda telah berakhir. Silakan login kembali.");
@@ -56,11 +56,11 @@ export default function OrderHistory() {
     }
 
     try {
-      const { response } = await api.PUT("/payment/admin/transaction/{order_id}", {
+      const { data, error, response } = await api.PUT("/payment/admin/transaction/{order_id}", {
         params: { path: { order_id: orderId } },
         body: { status: newStatus as any },
       });
-      const responseBody = await response.json();
+      const responseBody = (data || error) as any;
 
       if (response.status === 401 || response.status === 403) {
         await alertError("Sesi kadaluarsa. Silakan login kembali.");

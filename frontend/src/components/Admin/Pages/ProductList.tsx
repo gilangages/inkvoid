@@ -57,8 +57,8 @@ export default function ProductList() {
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const { response } = await api.GET("/products/admin/list");
-      const resData = await response.json();
+      const { data, error, response } = await api.GET("/products/admin/list");
+      const resData = (data || error) as any;
       if (resData?.success && Array.isArray(resData.data)) {
         setProducts(resData.data as Product[]);
       } else {
@@ -103,10 +103,10 @@ export default function ProductList() {
 
     setIsLoading(true);
     try {
-      const { response } = await api.POST("/products/bulk-delete", {
+      const { data, error, response } = await api.POST("/products/bulk-delete", {
         body: { ids: selectedIds } as any,
       });
-      const resData = await response.json();
+      const resData = (data || error) as any;
 
       if (response.status === 401 || response.status === 403) {
         await alertError("Akses ditolak. Silakan login ulang.");
@@ -193,10 +193,10 @@ export default function ProductList() {
     if (!(await alertConfirm("Apakah kamu yakin mau menghapus produk ini?"))) return;
 
     try {
-      const { response } = await api.DELETE("/products/{id}", {
+      const { data, error, response } = await api.DELETE("/products/{id}", {
         params: { path: { id } },
       });
-      const resData = await response.json();
+      const resData = (data || error) as any;
 
       if (response.status === 401 || response.status === 403) {
         await alertError("Sesi kadaluarsa. Silakan login kembali.");
