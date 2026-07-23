@@ -53,10 +53,10 @@ export default function DashboardOverview() {
   async function fetchVisitors(page = 1) {
     setVisitorLoading(true);
     try {
-      const { response } = await api.GET("/visits/list", {
+      const { data, error, response } = await api.GET("/visits/list", {
         params: { query: { page, limit: 10 } },
       });
-      const body = await response.json();
+      const body = (data || error) as any;
 
       if (response.status === 401 || response.status === 403) {
         await handleAuthError();
@@ -79,10 +79,10 @@ export default function DashboardOverview() {
     if (!(await alertConfirm("Yakin ingin menghapus data pengunjung ini?"))) return;
 
     try {
-      const { response } = await api.DELETE("/visits/{id}", {
+      const { data, error, response } = await api.DELETE("/visits/{id}", {
         params: { path: { id } },
       });
-      const body = await response.json();
+      const body = (data || error) as any;
 
       if (response.status === 401 || response.status === 403) {
         await handleAuthError();
@@ -114,8 +114,8 @@ export default function DashboardOverview() {
       return;
 
     try {
-      const { response } = await api.DELETE("/visits/all");
-      const body = await response.json();
+      const { data, error, response } = await api.DELETE("/visits/all");
+      const body = (data || error) as any;
 
       if (response.status === 401 || response.status === 403) {
         await handleAuthError();
@@ -138,10 +138,10 @@ export default function DashboardOverview() {
   // Fetch visit stats (dipindah ke function sendiri agar bisa dipanggil ulang)
   async function fetchVisitStats() {
     try {
-      const { response } = await api.GET("/visits/stats");
+      const { data, response } = await api.GET("/visits/stats");
 
       if (response.ok) {
-        const responseBody = await response.json();
+        const responseBody = data as any;
         setVisitStats(responseBody.data || responseBody);
       }
     } catch (error) {
@@ -151,9 +151,9 @@ export default function DashboardOverview() {
 
   useEffect(() => {
     // 1. Fetch Produk
-    api.GET("/products").then(async ({ response }) => {
+    api.GET("/products").then(async ({ data, error, response }) => {
       try {
-        const res = await response.json();
+        const res = (data || error) as any;
         if (res.success) {
           const products = res.data;
           const total = products.length;
