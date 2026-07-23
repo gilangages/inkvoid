@@ -131,6 +131,9 @@ const getAllProducts = async (req, res) => {
         if (typeof rawUrl === "string") {
           if (rawUrl.startsWith("http")) {
             finalUrl = rawUrl;
+            if (finalUrl.includes("cloudinary.com") && finalUrl.includes("/upload/") && !finalUrl.includes("q_auto")) {
+              finalUrl = finalUrl.replace("/upload/", "/upload/q_auto,f_auto/");
+            }
           } else {
             let cleanPath = rawUrl;
             if (!cleanPath.includes("uploads")) {
@@ -187,6 +190,9 @@ const getAdminProducts = async (req, res) => {
         if (typeof rawUrl === "string") {
           if (rawUrl.startsWith("http")) {
             finalUrl = rawUrl;
+            if (finalUrl.includes("cloudinary.com") && finalUrl.includes("/upload/") && !finalUrl.includes("q_auto")) {
+              finalUrl = finalUrl.replace("/upload/", "/upload/q_auto,f_auto/");
+            }
           } else {
             let cleanPath = rawUrl;
             if (!cleanPath.includes("uploads")) cleanPath = `/uploads/${cleanPath.replace(/^\/+/, "")}`;
@@ -231,6 +237,9 @@ const createProduct = async (req, res) => {
       let dbPath;
       if (isProduction) {
         dbPath = file.path;
+        if (dbPath.includes("/upload/") && !dbPath.includes("q_auto")) {
+          dbPath = dbPath.replace("/upload/", "/upload/q_auto,f_auto/");
+        }
       } else {
         dbPath = `/uploads/${file.filename}`;
       }
@@ -359,6 +368,9 @@ const updateProduct = async (req, res) => {
               const file = req.files[newFileIndex];
               newFileIndex++;
               let url = isProduction ? file.path : `/uploads/${file.filename}`;
+              if (isProduction && url.includes("/upload/") && !url.includes("q_auto")) {
+                url = url.replace("/upload/", "/upload/q_auto,f_auto/");
+              }
               return {
                 url: url,
                 label: item.label || file.originalname.split(".")[0],

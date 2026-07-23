@@ -37,7 +37,7 @@ describe("Product Deletion Logic", () => {
     // Inilah penyebab bug "sisa 2" foto kamu sebelumnya.
     const complexImages = JSON.stringify([
       { url: "https://res.cloudinary.com/demo/image/upload/v12345/lumastore/sepatu-keren.jpg" }, // Normal
-      { url: "https://res.cloudinary.com/demo/image/upload/w_1000,c_fill/v98765/lumastore/baju-baru.png" }, // Punya Transformasi
+      { url: "https://res.cloudinary.com/demo/image/upload/c_limit,f_auto,h_1000,q_auto,w_1000/v98765/lumastore/baju-baru.png" }, // Punya Transformasi Optimasi
     ]);
 
     const mockProduct = {
